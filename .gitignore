@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+data/ecommerce.db
+data/ecommerce.db-shm
+data/ecommerce.db-wal
