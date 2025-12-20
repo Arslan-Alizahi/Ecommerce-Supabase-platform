@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react'
-import { formatCurrency, calculateTax, calculateTotal } from '@/lib/utils'
+import { formatCurrency, calculateTotal } from '@/lib/utils'
 import { useCart } from '@/hooks/useCart'
 import { useToast } from '@/components/ui/Toast'
 import { motion } from 'framer-motion'
@@ -26,11 +26,35 @@ export default function CartPage() {
     address: '',
   })
 
-  const tax = calculateTax(subtotal)
-  const shipping = 0 // Free shipping for now
-  const total = calculateTotal(subtotal, tax, shipping, 0)
-
+  const [taxRate, setTaxRate] = useState(18) // Default 18%
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0)
+  const [shippingCost, setShippingCost] = useState(200) // Default shipping cost
   const [isProcessing, setIsProcessing] = useState(false)
+
+  // Fetch settings (tax rate, shipping threshold, shipping cost)
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings')
+        const data = await res.json()
+        if (data.success && data.data?.settings) {
+          const settings = data.data.settings
+          setTaxRate(settings.tax_rate?.value || 18)
+          setFreeShippingThreshold(settings.free_shipping_threshold?.value || 0)
+          setShippingCost(settings.shipping_cost?.value || 200)
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error)
+      }
+    }
+    fetchSettings()
+  }, [])
+
+  // Calculate tax based on dynamic rate
+  const tax = subtotal * (taxRate / 100)
+  // Calculate shipping - free if subtotal >= threshold (and threshold > 0)
+  const shipping = (freeShippingThreshold > 0 && subtotal < freeShippingThreshold) ? shippingCost : 0
+  const total = calculateTotal(subtotal, tax, shipping, 0)
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -253,13 +277,18 @@ export default function CartPage() {
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-zinc-500">
-                    <span>Service Tax (18%)</span>
+                    <span>Service Tax ({taxRate}%)</span>
                     <span>{formatCurrency(tax)}</span>
                   </div>
                   <div className="flex justify-between text-zinc-500">
-                    <span>Complimentary Shipping</span>
-                    <span>Free</span>
+                    <span>Shipping</span>
+                    <span>{shipping === 0 ? 'Free' : formatCurrency(shipping)}</span>
                   </div>
+                  {freeShippingThreshold > 0 && subtotal < freeShippingThreshold && (
+                    <div className="text-[10px] text-zinc-400 mt-1">
+                      Add {formatCurrency(freeShippingThreshold - subtotal)} more for free shipping
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-sm font-serif text-zinc-950">Grand Total</span>

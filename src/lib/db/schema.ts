@@ -115,6 +115,17 @@ export const createTables = `
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- Store settings table (configurable settings like tax rate)
+  CREATE TABLE IF NOT EXISTS store_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value TEXT NOT NULL,
+    setting_type TEXT DEFAULT 'string',
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Revenue transactions table (tracks revenue from online store orders)
   CREATE TABLE IF NOT EXISTS revenue_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,6 +161,7 @@ export const createTables = `
   CREATE INDEX IF NOT EXISTS idx_revenue_transaction_type ON revenue_transactions(transaction_type);
   CREATE INDEX IF NOT EXISTS idx_revenue_transaction_date ON revenue_transactions(transaction_date);
   CREATE INDEX IF NOT EXISTS idx_revenue_reference ON revenue_transactions(reference_id);
+  CREATE INDEX IF NOT EXISTS idx_store_settings_key ON store_settings(setting_key);
 `;
 
 export const createTriggers = `
@@ -186,6 +198,13 @@ export const createTriggers = `
   AFTER UPDATE ON social_media_links
   BEGIN
     UPDATE social_media_links SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+  END;
+
+  -- Update timestamp trigger for store_settings
+  CREATE TRIGGER IF NOT EXISTS update_store_settings_timestamp
+  AFTER UPDATE ON store_settings
+  BEGIN
+    UPDATE store_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
   END;
 
   -- Auto-create revenue transaction when order is created (only if paid)

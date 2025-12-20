@@ -73,6 +73,61 @@ export const getDb = (): Database.Database => {
           console.error('Failed to run revenue migration:', error)
         }
       }
+
+      // Check if store_settings table exists (migration)
+      const settingsTableCheck = db.prepare(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='store_settings'
+      `).get()
+
+      if (!settingsTableCheck) {
+        console.log('Store settings table not found, creating...')
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS store_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key TEXT UNIQUE NOT NULL,
+            setting_value TEXT NOT NULL,
+            setting_type TEXT DEFAULT 'string',
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE INDEX IF NOT EXISTS idx_store_settings_key ON store_settings(setting_key);
+        `)
+        console.log('Store settings table created')
+      }
+
+      // Check if store_settings has data, if not seed defaults
+      const settingsCount = db.prepare('SELECT COUNT(*) as count FROM store_settings').get() as { count: number }
+      const storeSettings = [
+        { key: 'tax_rate', value: '18', type: 'number', description: 'Tax rate percentage applied to orders' },
+        { key: 'currency_symbol', value: 'Rs. ', type: 'string', description: 'Currency symbol displayed in prices' },
+        { key: 'store_name', value: 'ZinyasRang', type: 'string', description: 'Store name' },
+        { key: 'low_stock_threshold', value: '5', type: 'number', description: 'Low stock warning threshold' },
+        { key: 'free_shipping_threshold', value: '0', type: 'number', description: 'Free shipping minimum amount' },
+        { key: 'shipping_cost', value: '200', type: 'number', description: 'Shipping cost when below free shipping threshold' },
+      ]
+
+      if (settingsCount.count === 0) {
+        console.log('Seeding default store settings...')
+        const insertSetting = db.prepare(`
+          INSERT INTO store_settings (setting_key, setting_value, setting_type, description)
+          VALUES (?, ?, ?, ?)
+        `)
+        storeSettings.forEach((s) => {
+          insertSetting.run(s.key, s.value, s.type, s.description)
+        })
+        console.log('Default store settings seeded')
+      } else {
+        // Check for any missing settings and add them
+        const insertIfMissing = db.prepare(`
+          INSERT OR IGNORE INTO store_settings (setting_key, setting_value, setting_type, description)
+          VALUES (?, ?, ?, ?)
+        `)
+        storeSettings.forEach((s) => {
+          insertIfMissing.run(s.key, s.value, s.type, s.description)
+        })
+      }
     }
   }
 

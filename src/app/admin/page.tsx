@@ -541,6 +541,47 @@ export default function AdminPage() {
                   </Link>
                 </CardContent>
               </Card>
+
+              {/* Store Settings Card */}
+              <Card hover3D className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 mt-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        Store Settings
+                      </h3>
+                      <p className="text-gray-600">
+                        Configure tax rates, store info, and other settings
+                      </p>
+                    </div>
+                    <div className="p-4 bg-purple-100 rounded-lg">
+                      <Settings className="h-10 w-10 text-purple-600" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Tax Rate</p>
+                      <p className="text-lg font-bold text-gray-900">Configure</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Store Info</p>
+                      <p className="text-lg font-bold text-gray-900">Edit</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Shipping</p>
+                      <p className="text-lg font-bold text-gray-900">Setup</p>
+                    </div>
+                  </div>
+
+                  <Link href="/admin/settings">
+                    <Button variant="primary" size="lg" fullWidth className="bg-purple-600 hover:bg-purple-700">
+                      <Settings className="h-5 w-5 mr-2" />
+                      Open Store Settings
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             </div>
           )}
 
