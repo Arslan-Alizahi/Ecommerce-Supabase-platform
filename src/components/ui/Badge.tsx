@@ -5,25 +5,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/cn'
 
 const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
+  'inline-flex items-center justify-center rounded-none px-2 py-0.5 text-[10px] font-medium tracking-widest uppercase transition-colors border',
   {
     variants: {
       variant: {
-        default: 'bg-primary-100 text-primary-800',
-        secondary: 'bg-gray-100 text-gray-800',
-        success: 'bg-green-100 text-green-800',
-        warning: 'bg-yellow-100 text-yellow-800',
-        danger: 'bg-red-100 text-red-800',
-        info: 'bg-blue-100 text-blue-800',
-        outline: 'border border-gray-300 bg-transparent text-gray-700',
+        default: 'bg-zinc-100 text-zinc-900 border-zinc-100',
+        secondary: 'bg-white text-zinc-500 border-zinc-200',
+        success: 'bg-zinc-950 text-white border-zinc-950',
+        warning: 'bg-stone-100 text-stone-800 border-stone-200',
+        danger: 'bg-red-50 text-red-900 border-red-100',
+        info: 'bg-zinc-50 text-zinc-700 border-zinc-100',
+        outline: 'border border-zinc-950 bg-transparent text-zinc-950',
       },
       size: {
-        sm: 'text-xs px-2 py-0.5',
-        md: 'text-sm px-2.5 py-0.5',
-        lg: 'text-base px-3 py-1',
-      },
-      pulse: {
-        true: 'badge-pulse',
+        sm: 'text-[9px] px-1.5 py-0.5',
+        md: 'text-[10px] px-2 py-0.5',
+        lg: 'text-[11px] px-3 py-1',
       },
     },
     defaultVariants: {
@@ -35,18 +32,17 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {}
+  VariantProps<typeof badgeVariants> { }
 
 export default function Badge({
   className,
   variant,
   size,
-  pulse,
   ...props
 }: BadgeProps) {
   return (
     <span
-      className={cn(badgeVariants({ variant, size, pulse }), className)}
+      className={cn(badgeVariants({ variant, size }), className)}
       {...props}
     />
   )
@@ -94,7 +90,7 @@ export function StockBadge({ quantity, threshold = 5 }: { quantity: number; thre
   }
 
   return (
-    <Badge variant={getVariant()} pulse={quantity <= 0}>
+    <Badge variant={getVariant()}>
       {getText()}
     </Badge>
   )

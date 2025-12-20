@@ -14,10 +14,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300',
-          hover3D && 'card-3d card-3d-hover',
-          !hover3D && 'hover:shadow-lg',
-          !noPadding && 'p-6',
+          'bg-white border border-zinc-100 shadow-luxury transition-all duration-500',
+          !noPadding && 'p-8',
           className
         )}
         {...props}
@@ -34,7 +32,7 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('pb-4 border-b border-gray-200', className)}
+      className={cn('pb-6 border-b border-zinc-100 mb-6', className)}
       {...props}
     />
   )
@@ -45,7 +43,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadi
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold text-gray-900', className)}
+      className={cn('text-xl font-serif tracking-tight text-zinc-900', className)}
       {...props}
     />
   )
@@ -58,7 +56,7 @@ export const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-sm text-gray-600 mt-1', className)}
+    className={cn('text-xs uppercase tracking-widest text-zinc-500 mt-2', className)}
     {...props}
   />
 ))
@@ -70,7 +68,7 @@ export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className, noPadding, ...props }, ref) => (
-    <div ref={ref} className={cn(!noPadding && 'pt-4', className)} {...props} />
+    <div ref={ref} className={cn(!noPadding && 'space-y-4', className)} {...props} />
   )
 )
 CardContent.displayName = 'CardContent'
@@ -79,7 +77,7 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('pt-4 mt-auto', className)}
+      className={cn('pt-8 mt-auto flex items-center justify-between', className)}
       {...props}
     />
   )
