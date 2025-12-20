@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, Package, Truck, Clock } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [order, setOrder] = useState<any>(null)
@@ -89,7 +89,7 @@ export default function OrderSuccessPage() {
           {/* Delivery Information */}
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900">What's Next?</h3>
-            
+
             <div className="flex items-start space-x-4">
               <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <Package className="w-5 h-5 text-blue-600" />
@@ -137,6 +137,18 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    }>
+      <OrderSuccessContent />
+    </Suspense>
   )
 }
 

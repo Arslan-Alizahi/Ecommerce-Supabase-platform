@@ -64,9 +64,13 @@ export const CardDescription = forwardRef<
 ))
 CardDescription.displayName = 'CardDescription'
 
-export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('pt-4', className)} {...props} />
+export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
+  noPadding?: boolean
+}
+
+export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
+  ({ className, noPadding, ...props }, ref) => (
+    <div ref={ref} className={cn(!noPadding && 'pt-4', className)} {...props} />
   )
 )
 CardContent.displayName = 'CardContent'

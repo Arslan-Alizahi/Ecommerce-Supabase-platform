@@ -17,6 +17,7 @@ export interface Product {
   created_at?: string
   updated_at?: string
   images?: ProductImage[]
+  primary_image?: string
 }
 
 export interface ProductImage {

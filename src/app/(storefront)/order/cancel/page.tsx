@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { XCircle, AlertTriangle, ShoppingCart, Home } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 
-export default function OrderCancelPage() {
+function OrderCancelContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [order, setOrder] = useState<any>(null)
@@ -65,7 +65,7 @@ export default function OrderCancelPage() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Your Order is Saved</h2>
               <p className="text-gray-600 mb-4">
-                Don't worry! Your order has been saved and is waiting for payment. 
+                Don't worry! Your order has been saved and is waiting for payment.
                 You can complete the payment anytime.
               </p>
             </div>
@@ -142,6 +142,18 @@ export default function OrderCancelPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OrderCancelPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    }>
+      <OrderCancelContent />
+    </Suspense>
   )
 }
 

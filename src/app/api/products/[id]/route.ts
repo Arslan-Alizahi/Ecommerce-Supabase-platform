@@ -5,11 +5,12 @@ import { apiResponse, apiError, slugify } from '@/lib/utils'
 // GET /api/products/[id] - Get single product by ID or slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
-    const identifier = params.id
+    const { id } = await params
+    const identifier = id
 
     // Check if identifier is numeric (ID) or string (slug)
     const isNumeric = /^\d+$/.test(identifier)
@@ -24,7 +25,7 @@ export async function GET(
       WHERE ${isNumeric ? 'p.id' : 'p.slug'} = ?
     `
 
-    const product = db.prepare(sql).get(isNumeric ? parseInt(identifier) : identifier)
+    const product = db.prepare(sql).get(isNumeric ? parseInt(identifier) : identifier) as any
 
     if (!product) {
       return NextResponse.json(
@@ -69,12 +70,13 @@ export async function GET(
 // PUT /api/products/[id] - Update product
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
     const db = getDb()
-    const productId = parseInt(params.id)
+    const { id } = await params
+    const productId = parseInt(id)
 
     // Check if product exists
     const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(productId)
@@ -208,11 +210,12 @@ export async function PUT(
 // DELETE /api/products/[id] - Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
-    const productId = parseInt(params.id)
+    const { id } = await params
+    const productId = parseInt(id)
 
     // Check if product exists
     const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(productId)

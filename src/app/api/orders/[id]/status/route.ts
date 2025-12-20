@@ -5,12 +5,13 @@ import { apiResponse, apiError } from '@/lib/utils'
 // PUT /api/orders/[id]/status - Update order payment status (Admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
     const { paymentStatus, paymentMethod } = body
-    const orderId = params.id
+    const { id } = await params
+    const orderId = id
 
     if (!orderId) {
       return NextResponse.json(
@@ -59,7 +60,7 @@ export async function PUT(
     db.prepare(updateSql).run(...params_array)
 
     // Fetch updated order
-    const updatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId)
+    const updatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
 
     return NextResponse.json(
       apiResponse({
@@ -79,10 +80,11 @@ export async function PUT(
 // GET /api/orders/[id]/status - Get order payment status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const orderId = params.id
+    const { id } = await params
+    const orderId = id
 
     if (!orderId) {
       return NextResponse.json(

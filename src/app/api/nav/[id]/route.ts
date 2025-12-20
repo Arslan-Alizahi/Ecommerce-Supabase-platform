@@ -4,13 +4,14 @@ import { getDb } from '@/lib/db'
 // GET /api/nav/[id] - Get single navigation item
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
+    const { id } = await params
     const item = db
       .prepare('SELECT * FROM nav_items WHERE id = ?')
-      .get(params.id)
+      .get(id) as any
 
     if (!item) {
       return NextResponse.json(
@@ -35,16 +36,17 @@ export async function GET(
 // PUT /api/nav/[id] - Update navigation item
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
     const db = getDb()
 
     // Check if item exists
+    const { id } = await params
     const existing = db
       .prepare('SELECT id FROM nav_items WHERE id = ?')
-      .get(params.id)
+      .get(id)
 
     if (!existing) {
       return NextResponse.json(
@@ -79,13 +81,14 @@ export async function PUT(
       body.display_order || 0,
       body.is_active ? 1 : 0,
       body.location || 'header',
+      body.location || 'header',
       body.meta ? JSON.stringify(body.meta) : null,
-      params.id
+      id
     )
 
     const updated = db
       .prepare('SELECT * FROM nav_items WHERE id = ?')
-      .get(params.id)
+      .get(id)
 
     return NextResponse.json({
       success: true,
@@ -104,15 +107,16 @@ export async function PUT(
 // DELETE /api/nav/[id] - Delete navigation item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
 
     // Check if item exists
+    const { id } = await params
     const existing = db
       .prepare('SELECT id FROM nav_items WHERE id = ?')
-      .get(params.id)
+      .get(id)
 
     if (!existing) {
       return NextResponse.json(
@@ -121,7 +125,7 @@ export async function DELETE(
       )
     }
 
-    db.prepare('DELETE FROM nav_items WHERE id = ?').run(params.id)
+    db.prepare('DELETE FROM nav_items WHERE id = ?').run(id)
 
     return NextResponse.json({
       success: true,

@@ -5,11 +5,12 @@ import { apiResponse, apiError, slugify } from '@/lib/utils'
 // GET /api/categories/[id] - Get single category
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
-    const identifier = params.id
+    const { id } = await params
+    const identifier = id
     const isNumeric = /^\d+$/.test(identifier)
 
     const category = db.prepare(`
@@ -17,7 +18,7 @@ export async function GET(
       FROM categories c
       LEFT JOIN categories p ON c.parent_id = p.id
       WHERE ${isNumeric ? 'c.id' : 'c.slug'} = ?
-    `).get(isNumeric ? parseInt(identifier) : identifier)
+    `).get(isNumeric ? parseInt(identifier) : identifier) as any
 
     if (!category) {
       return NextResponse.json(
@@ -39,12 +40,13 @@ export async function GET(
 // PUT /api/categories/[id] - Update category
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
     const db = getDb()
-    const categoryId = parseInt(params.id)
+    const { id } = await params
+    const categoryId = parseInt(id)
 
     const existing = db.prepare('SELECT id FROM categories WHERE id = ?').get(categoryId)
     if (!existing) {
@@ -122,11 +124,12 @@ export async function PUT(
 // DELETE /api/categories/[id] - Delete category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = getDb()
-    const categoryId = parseInt(params.id)
+    const { id } = await params
+    const categoryId = parseInt(id)
 
     const existing = db.prepare('SELECT id FROM categories WHERE id = ?').get(categoryId)
     if (!existing) {

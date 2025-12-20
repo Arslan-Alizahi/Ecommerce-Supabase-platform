@@ -9,9 +9,9 @@ if (!stripeSecretKey) {
 
 export const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-11-20.acacia',
-      typescript: true,
-    })
+    apiVersion: '2025-10-29.clover',
+    typescript: true,
+  })
   : null
 
 /**

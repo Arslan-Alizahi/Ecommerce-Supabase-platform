@@ -442,215 +442,338 @@ export default function AdminPage() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your store</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex space-x-1 mb-6 border-b">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <tab.icon className="h-5 w-5" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Dashboard */}
-        {activeTab === 'dashboard' && (
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Total Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-primary-600">{totalProducts}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Total Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-green-600">{totalOrders}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Store Revenue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {formatCurrency(totalRevenue)}
-                  </p>
-                  <p className="text-sm text-gray-500">From online orders</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Low Stock Alert</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-red-600">{lowStockProducts}</p>
-                  <p className="text-sm text-gray-500">Products need restocking</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Revenue Management Card */}
-            <Card hover3D className="bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Revenue Management
-                    </h3>
-                    <p className="text-gray-600">
-                      Track and analyze revenue from both online store and local billing
-                    </p>
-                  </div>
-                  <div className="p-4 bg-primary-100 rounded-lg">
-                    <DollarSign className="h-10 w-10 text-primary-600" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-white rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-                    <p className="text-lg font-bold text-gray-900">View Details</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Store vs Billing</p>
-                    <p className="text-lg font-bold text-gray-900">Compare</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Export Data</p>
-                    <p className="text-lg font-bold text-gray-900">CSV</p>
-                  </div>
-                </div>
-
-                <Link href="/admin/revenue">
-                  <Button variant="primary" size="lg" fullWidth>
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Open Revenue Dashboard
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600">Manage your store</p>
           </div>
-        )}
 
-        {/* Products */}
-        {activeTab === 'products' && (
-          <div>
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-semibold">Products</h2>
-              <Button
-                variant="primary"
-                leftIcon={<Plus className="h-4 w-4" />}
-                onClick={() => {
-                  setEditingProduct(null)
-                  setProductForm({
-                    name: '',
-                    description: '',
-                    sku: '',
-                    category_id: '',
-                    price: '',
-                    stock_quantity: '',
-                    is_featured: false,
-                  })
-                  setProductModal(true)
-                }}
+          {/* Tabs */}
+          <div className="flex space-x-1 mb-6 border-b">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${activeTab === tab.id
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
-                Add Product
-              </Button>
-            </div>
+                <tab.icon className="h-5 w-5" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
+          {/* Dashboard */}
+          {activeTab === 'dashboard' && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Total Products</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-primary-600">{totalProducts}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Total Orders</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-green-600">{totalOrders}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Store Revenue</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {formatCurrency(totalRevenue)}
+                    </p>
+                    <p className="text-sm text-gray-500">From online orders</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Low Stock Alert</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-red-600">{lowStockProducts}</p>
+                    <p className="text-sm text-gray-500">Products need restocking</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Revenue Management Card */}
+              <Card hover3D className="bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        Revenue Management
+                      </h3>
+                      <p className="text-gray-600">
+                        Track and analyze revenue from both online store and local billing
+                      </p>
+                    </div>
+                    <div className="p-4 bg-primary-100 rounded-lg">
+                      <DollarSign className="h-10 w-10 text-primary-600" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+                      <p className="text-lg font-bold text-gray-900">View Details</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Store vs Billing</p>
+                      <p className="text-lg font-bold text-gray-900">Compare</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Export Data</p>
+                      <p className="text-lg font-bold text-gray-900">CSV</p>
+                    </div>
+                  </div>
+
+                  <Link href="/admin/revenue">
+                    <Button variant="primary" size="lg" fullWidth>
+                      <DollarSign className="h-5 w-5 mr-2" />
+                      Open Revenue Dashboard
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Products */}
+          {activeTab === 'products' && (
+            <div>
+              <div className="flex justify-between mb-4">
+                <h2 className="text-xl font-semibold">Products</h2>
+                <Button
+                  variant="primary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => {
+                    setEditingProduct(null)
+                    setProductForm({
+                      name: '',
+                      description: '',
+                      sku: '',
+                      category_id: '',
+                      price: '',
+                      stock_quantity: '',
+                      is_featured: false,
+                      image_url: '',
+                    })
+                    setProductModal(true)
+                  }}
+                >
+                  Add Product
+                </Button>
+              </div>
+
+              <Card noPadding>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">SKU</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Stock</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {products.map(product => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={product.primary_image || '/placeholder.svg'}
+                                alt={product.name}
+                                className="w-10 h-10 object-cover rounded"
+                              />
+                              <div>
+                                <p className="font-medium text-sm">{product.name}</p>
+                                <p className="text-xs text-gray-500 truncate max-w-xs">
+                                  {product.description}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm">{product.sku}</td>
+                          <td className="px-4 py-3 text-sm">{product.category_name}</td>
+                          <td className="px-4 py-3 text-sm font-medium">
+                            {formatCurrency(product.price)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StockBadge quantity={product.stock_quantity} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={product.is_active ? 'active' : 'inactive'} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(product)
+                                  setProductForm({
+                                    name: product.name,
+                                    description: product.description || '',
+                                    sku: product.sku,
+                                    category_id: product.category_id.toString(),
+                                    price: product.price.toString(),
+                                    stock_quantity: product.stock_quantity.toString(),
+                                    is_featured: Boolean(product.is_featured),
+                                    image_url: product.images?.[0]?.image_url || '',
+                                  })
+                                  setProductModal(true)
+                                }}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteProduct(product.id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Categories */}
+          {activeTab === 'categories' && (
+            <div>
+              <div className="flex justify-between mb-4">
+                <h2 className="text-xl font-semibold">Categories</h2>
+                <Button
+                  variant="primary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => {
+                    setEditingCategory(null)
+                    setCategoryForm({
+                      name: '',
+                      description: '',
+                      parent_id: '',
+                    })
+                    setCategoryModal(true)
+                  }}
+                >
+                  Add Category
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map(category => (
+                  <Card key={category.id}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold">{category.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {category.product_count || 0} products
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingCategory(category)
+                            setCategoryForm({
+                              name: category.name,
+                              description: category.description || '',
+                              parent_id: category.parent_id?.toString() || '',
+                            })
+                            setCategoryModal(true)
+                          }}
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Orders */}
+          {activeTab === 'orders' && (
             <Card noPadding>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Product</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">SKU</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Stock</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order #</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {products.map(product => (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={product.primary_image || '/placeholder.svg'}
-                              alt={product.name}
-                              className="w-10 h-10 object-cover rounded"
-                            />
-                            <div>
-                              <p className="font-medium text-sm">{product.name}</p>
-                              <p className="text-xs text-gray-500 truncate max-w-xs">
-                                {product.description}
-                              </p>
-                            </div>
+                    {orders.map(order => (
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium">{order.order_number}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <div>
+                            <p>{order.customer_name || 'Guest'}</p>
+                            <p className="text-xs text-gray-500">{order.customer_email}</p>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm">{product.sku}</td>
-                        <td className="px-4 py-3 text-sm">{product.category_name}</td>
                         <td className="px-4 py-3 text-sm font-medium">
-                          {formatCurrency(product.price)}
+                          {formatCurrency(order.total)}
                         </td>
                         <td className="px-4 py-3">
-                          <StockBadge quantity={product.stock_quantity} />
+                          <StatusBadge status={order.status} />
                         </td>
                         <td className="px-4 py-3">
-                          <StatusBadge status={product.is_active ? 'active' : 'inactive'} />
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.payment_status === 'paid' || order.payment_status === 'completed'
+                              ? 'bg-green-100 text-green-800'
+                              : order.payment_status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : order.payment_status === 'failed'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}>
+                            {order.payment_status || 'pending'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500">
+                          {new Date(order.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingProduct(product)
-                                setProductForm({
-                                  name: product.name,
-                                  description: product.description || '',
-                                  sku: product.sku,
-                                  category_id: product.category_id.toString(),
-                                  price: product.price.toString(),
-                                  stock_quantity: product.stock_quantity.toString(),
-                                  is_featured: Boolean(product.is_featured),
-                                  image_url: product.images?.[0]?.image_url || '',
-                                })
-                                setProductModal(true)
-                              }}
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          {(order.payment_status === 'pending') && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleMarkAsPaid(order.id)}
                             >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteProduct(product.id)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                              Mark as Paid
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -658,649 +781,523 @@ export default function AdminPage() {
                 </table>
               </div>
             </Card>
-          </div>
-        )}
+          )}
 
-        {/* Categories */}
-        {activeTab === 'categories' && (
-          <div>
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-semibold">Categories</h2>
-              <Button
-                variant="primary"
-                leftIcon={<Plus className="h-4 w-4" />}
-                onClick={() => {
-                  setEditingCategory(null)
-                  setCategoryForm({
-                    name: '',
-                    description: '',
-                    parent_id: '',
-                  })
-                  setCategoryModal(true)
-                }}
-              >
-                Add Category
-              </Button>
-            </div>
+          {/* Social Media */}
+          {activeTab === 'social' && (
+            <div>
+              <div className="flex justify-between mb-4">
+                <h2 className="text-xl font-semibold">Social Media Links</h2>
+                <Button
+                  variant="primary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => {
+                    setEditingSocial(null)
+                    setSocialForm({
+                      platform: '',
+                      url: '',
+                      icon: '',
+                      display_order: 0,
+                      is_active: true,
+                    })
+                    setSocialModal(true)
+                  }}
+                >
+                  Add Social Link
+                </Button>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map(category => (
-                <Card key={category.id}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold">{category.name}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {category.product_count || 0} products
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingCategory(category)
-                          setCategoryForm({
-                            name: category.name,
-                            description: category.description || '',
-                            parent_id: category.parent_id?.toString() || '',
-                          })
-                          setCategoryModal(true)
-                        }}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Orders */}
-        {activeTab === 'orders' && (
-          <Card noPadding>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order #</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Order Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {orders.map(order => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium">{order.order_number}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <div>
-                          <p>{order.customer_name || 'Guest'}</p>
-                          <p className="text-xs text-gray-500">{order.customer_email}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {socialLinks.map((link) => (
+                  <Card key={link.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-3 rounded-lg">
+                            <Share2 className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">{link.platform}</h3>
+                            <p className="text-sm text-gray-500">Order: {link.display_order}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium">
-                        {formatCurrency(order.total)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={order.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.payment_status === 'paid' || order.payment_status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : order.payment_status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : order.payment_status === 'failed'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {order.payment_status || 'pending'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        {(order.payment_status === 'pending') && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleMarkAsPaid(order.id)}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingSocial(link)
+                              setSocialForm({
+                                platform: link.platform,
+                                url: link.url,
+                                icon: link.icon,
+                                display_order: link.display_order,
+                                is_active: link.is_active === 1,
+                              })
+                              setSocialModal(true)
+                            }}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           >
-                            Mark as Paid
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
-
-        {/* Social Media */}
-        {activeTab === 'social' && (
-          <div>
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-semibold">Social Media Links</h2>
-              <Button
-                variant="primary"
-                leftIcon={<Plus className="h-4 w-4" />}
-                onClick={() => {
-                  setEditingSocial(null)
-                  setSocialForm({
-                    platform: '',
-                    url: '',
-                    icon: '',
-                    display_order: 0,
-                    is_active: true,
-                  })
-                  setSocialModal(true)
-                }}
-              >
-                Add Social Link
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {socialLinks.map((link) => (
-                <Card key={link.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-3 rounded-lg">
-                          <Share2 className="h-6 w-6 text-white" />
+                            <Edit2 className="h-4 w-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => deleteSocial(link.id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </button>
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-16">Icon:</span>
+                          <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">
+                            {link.icon}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-16">URL:</span>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:underline truncate flex-1"
+                          >
+                            {link.url}
+                          </a>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-16">Status:</span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${link.is_active
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-600'
+                              }`}
+                          >
+                            {link.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {socialLinks.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <Share2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No social media links yet.</p>
+                    <p className="text-sm mt-2">Click "Add Social Link" to get started.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Tab */}
+          {activeTab === 'navigation' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Navigation Items</h2>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setEditingNav(null)
+                    setNavForm({
+                      label: '',
+                      href: '',
+                      parent_id: '',
+                      type: 'link',
+                      target: '_self',
+                      icon: '',
+                      display_order: 0,
+                      is_active: true,
+                      location: 'header',
+                    })
+                    setNavModal(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Nav Item
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {navItems.map(item => (
+                  <Card key={item.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="font-semibold text-lg">{link.platform}</h3>
-                          <p className="text-sm text-gray-500">Order: {link.display_order}</p>
+                          <h3 className="font-semibold text-lg">{item.label}</h3>
+                          <p className="text-sm text-gray-500 capitalize">{item.type}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNav(item)
+                              setNavForm({
+                                label: item.label,
+                                href: item.href,
+                                parent_id: item.parent_id?.toString() || '',
+                                type: item.type,
+                                target: item.target,
+                                icon: item.icon || '',
+                                display_order: item.display_order,
+                                is_active: item.is_active === 1,
+                                location: item.location,
+                              })
+                              setNavModal(true)
+                            }}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="h-4 w-4 text-blue-600" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteNav(item.id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setEditingSocial(link)
-                            setSocialForm({
-                              platform: link.platform,
-                              url: link.url,
-                              icon: link.icon,
-                              display_order: link.display_order,
-                              is_active: link.is_active === 1,
-                            })
-                            setSocialModal(true)
-                          }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Edit2 className="h-4 w-4 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => deleteSocial(link.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-16">Icon:</span>
-                        <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">
-                          {link.icon}
-                        </span>
+                      <div className="space-y-2">
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-20">Href:</span>
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded truncate flex-1">
+                            {item.href}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-20">Order:</span>
+                          <span className="font-medium">{item.display_order}</span>
+                        </div>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500 w-20">Status:</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleNavActive(item)}
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80 ${item.is_active
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                          >
+                            {item.is_active ? 'Active' : 'Inactive'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-16">URL:</span>
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary-600 hover:underline truncate flex-1"
-                        >
-                          {link.url}
-                        </a>
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-16">Status:</span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            link.is_active
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {link.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
 
-              {socialLinks.length === 0 && (
-                <div className="col-span-full text-center py-12 text-gray-500">
-                  <Share2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>No social media links yet.</p>
-                  <p className="text-sm mt-2">Click "Add Social Link" to get started.</p>
-                </div>
-              )}
+                {navItems.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <Menu className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No navigation items yet.</p>
+                    <p className="text-sm mt-2">Click "Add Nav Item" to get started.</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Navigation Tab */}
-        {activeTab === 'navigation' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Navigation Items</h2>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setEditingNav(null)
-                  setNavForm({
-                    label: '',
-                    href: '',
-                    parent_id: '',
-                    type: 'link',
-                    target: '_self',
-                    icon: '',
-                    display_order: 0,
-                    is_active: true,
-                    location: 'header',
-                  })
-                  setNavModal(true)
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Nav Item
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {navItems.map(item => (
-                <Card key={item.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">{item.label}</h3>
-                        <p className="text-sm text-gray-500 capitalize">{item.type}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingNav(item)
-                            setNavForm({
-                              label: item.label,
-                              href: item.href,
-                              parent_id: item.parent_id?.toString() || '',
-                              type: item.type,
-                              target: item.target,
-                              icon: item.icon || '',
-                              display_order: item.display_order,
-                              is_active: item.is_active === 1,
-                              location: item.location,
-                            })
-                            setNavModal(true)
-                          }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Edit2 className="h-4 w-4 text-blue-600" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteNav(item.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-20">Href:</span>
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded truncate flex-1">
-                          {item.href}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-20">Order:</span>
-                        <span className="font-medium">{item.display_order}</span>
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <span className="text-gray-500 w-20">Status:</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleNavActive(item)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-colors hover:opacity-80 ${
-                            item.is_active
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          {item.is_active ? 'Active' : 'Inactive'}
-                        </button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {navItems.length === 0 && (
-                <div className="col-span-full text-center py-12 text-gray-500">
-                  <Menu className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>No navigation items yet.</p>
-                  <p className="text-sm mt-2">Click "Add Nav Item" to get started.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Product Modal */}
-      <Modal
-        isOpen={productModal}
-        onClose={() => setProductModal(false)}
-        title={editingProduct ? 'Edit Product' : 'Add Product'}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Product Name"
-            value={productForm.name}
-            onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Description"
-            value={productForm.description}
-            onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Image
-            </label>
-            <ImageUpload
-              value={productForm.image_url}
-              onChange={(url) => setProductForm({ ...productForm, image_url: url })}
-              onRemove={() => setProductForm({ ...productForm, image_url: '' })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="SKU"
-              value={productForm.sku}
-              onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
-              placeholder="Auto-generated if empty"
-            />
-
-            <Select
-              label="Category"
-              value={productForm.category_id}
-              onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
-              options={categories.map(cat => ({
-                value: cat.id.toString(),
-                label: cat.name,
-              }))}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Price"
-              type="number"
-              step="0.01"
-              value={productForm.price}
-              onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-              required
-            />
-
-            <Input
-              label="Stock Quantity"
-              type="number"
-              value={productForm.stock_quantity}
-              onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setProductModal(false)} fullWidth>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={saveProduct} fullWidth>
-              {editingProduct ? 'Update' : 'Create'} Product
-            </Button>
-          </div>
+          )}
         </div>
-      </Modal>
 
-      {/* Category Modal */}
-      <Modal
-        isOpen={categoryModal}
-        onClose={() => setCategoryModal(false)}
-        title={editingCategory ? 'Edit Category' : 'Add Category'}
-      >
-        <div className="space-y-4">
-          <Input
-            label="Category Name"
-            value={categoryForm.name}
-            onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-            required
-          />
+        {/* Product Modal */}
+        <Modal
+          isOpen={productModal}
+          onClose={() => setProductModal(false)}
+          title={editingProduct ? 'Edit Product' : 'Add Product'}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <Input
+              label="Product Name"
+              value={productForm.name}
+              onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+              required
+            />
 
-          <Input
-            label="Description"
-            value={categoryForm.description}
-            onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-          />
+            <Input
+              label="Description"
+              value={productForm.description}
+              onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+            />
 
-          <Select
-            label="Parent Category (Optional)"
-            value={categoryForm.parent_id}
-            onChange={(e) => setCategoryForm({ ...categoryForm, parent_id: e.target.value })}
-            options={[
-              { value: '', label: 'None (Top Level)' },
-              ...categories
-                .filter(cat => cat.id !== editingCategory?.id)
-                .map(cat => ({
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Product Image
+              </label>
+              <ImageUpload
+                value={productForm.image_url}
+                onChange={(url) => setProductForm({ ...productForm, image_url: url })}
+                onRemove={() => setProductForm({ ...productForm, image_url: '' })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="SKU"
+                value={productForm.sku}
+                onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
+                placeholder="Auto-generated if empty"
+              />
+
+              <Select
+                label="Category"
+                value={productForm.category_id}
+                onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
+                options={categories.map(cat => ({
                   value: cat.id.toString(),
                   label: cat.name,
-                }))
-            ]}
-          />
+                }))}
+                required
+              />
+            </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setCategoryModal(false)} fullWidth>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={saveCategory} fullWidth>
-              {editingCategory ? 'Update' : 'Create'} Category
-            </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Price"
+                type="number"
+                step="0.01"
+                value={productForm.price}
+                onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                required
+              />
+
+              <Input
+                label="Stock Quantity"
+                type="number"
+                value={productForm.stock_quantity}
+                onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setProductModal(false)} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={saveProduct} fullWidth>
+                {editingProduct ? 'Update' : 'Create'} Product
+              </Button>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
 
-      {/* Social Media Modal */}
-      <Modal
-        isOpen={socialModal}
-        onClose={() => setSocialModal(false)}
-        title={editingSocial ? 'Edit Social Link' : 'Add Social Link'}
-      >
-        <div className="space-y-4">
-          <Input
-            label="Platform Name"
-            value={socialForm.platform}
-            onChange={(e) => setSocialForm({ ...socialForm, platform: e.target.value })}
-            placeholder="e.g., Facebook, Instagram, Twitter"
-            required
-          />
-
-          <Input
-            label="URL"
-            value={socialForm.url}
-            onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })}
-            placeholder="https://facebook.com/yourpage"
-            required
-          />
-
-          <Select
-            label="Icon"
-            value={socialForm.icon}
-            onChange={(e) => setSocialForm({ ...socialForm, icon: e.target.value })}
-            options={[
-              { value: '', label: 'Select an icon' },
-              { value: 'facebook', label: 'Facebook' },
-              { value: 'instagram', label: 'Instagram' },
-              { value: 'twitter', label: 'Twitter / X' },
-              { value: 'linkedin', label: 'LinkedIn' },
-              { value: 'youtube', label: 'YouTube' },
-            ]}
-            required
-          />
-
-          <Input
-            label="Display Order"
-            type="number"
-            value={socialForm.display_order.toString()}
-            onChange={(e) => setSocialForm({ ...socialForm, display_order: parseInt(e.target.value) || 0 })}
-            helperText="Lower numbers appear first"
-          />
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="social-active"
-              checked={socialForm.is_active}
-              onChange={(e) => setSocialForm({ ...socialForm, is_active: e.target.checked })}
-              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+        {/* Category Modal */}
+        <Modal
+          isOpen={categoryModal}
+          onClose={() => setCategoryModal(false)}
+          title={editingCategory ? 'Edit Category' : 'Add Category'}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Category Name"
+              value={categoryForm.name}
+              onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+              required
             />
-            <label htmlFor="social-active" className="text-sm font-medium text-gray-700">
-              Active
-            </label>
-          </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setSocialModal(false)} fullWidth>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={saveSocial} fullWidth>
-              {editingSocial ? 'Update' : 'Create'} Link
-            </Button>
-          </div>
-        </div>
-      </Modal>
+            <Input
+              label="Description"
+              value={categoryForm.description}
+              onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+            />
 
-      {/* Navigation Modal */}
-      <Modal
-        isOpen={navModal}
-        onClose={() => setNavModal(false)}
-        title={editingNav ? 'Edit Navigation Item' : 'Add Navigation Item'}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Label"
-            value={navForm.label}
-            onChange={(e) => setNavForm({ ...navForm, label: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Href / URL"
-            value={navForm.href}
-            onChange={(e) => setNavForm({ ...navForm, href: e.target.value })}
-            placeholder="/products or https://example.com"
-            required
-          />
-
-          <div className="grid grid-cols-2 gap-4">
             <Select
-              label="Type"
-              value={navForm.type}
-              onChange={(e) => setNavForm({ ...navForm, type: e.target.value })}
+              label="Parent Category (Optional)"
+              value={categoryForm.parent_id}
+              onChange={(e) => setCategoryForm({ ...categoryForm, parent_id: e.target.value })}
               options={[
-                { value: 'link', label: 'Link' },
-                { value: 'button', label: 'Button' },
-                { value: 'dropdown', label: 'Dropdown' },
-                { value: 'group', label: 'Group' },
+                { value: '', label: 'None (Top Level)' },
+                ...categories
+                  .filter(cat => cat.id !== editingCategory?.id)
+                  .map(cat => ({
+                    value: cat.id.toString(),
+                    label: cat.name,
+                  }))
               ]}
+            />
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setCategoryModal(false)} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={saveCategory} fullWidth>
+                {editingCategory ? 'Update' : 'Create'} Category
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Social Media Modal */}
+        <Modal
+          isOpen={socialModal}
+          onClose={() => setSocialModal(false)}
+          title={editingSocial ? 'Edit Social Link' : 'Add Social Link'}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Platform Name"
+              value={socialForm.platform}
+              onChange={(e) => setSocialForm({ ...socialForm, platform: e.target.value })}
+              placeholder="e.g., Facebook, Instagram, Twitter"
+              required
+            />
+
+            <Input
+              label="URL"
+              value={socialForm.url}
+              onChange={(e) => setSocialForm({ ...socialForm, url: e.target.value })}
+              placeholder="https://facebook.com/yourpage"
               required
             />
 
             <Select
-              label="Target"
-              value={navForm.target}
-              onChange={(e) => setNavForm({ ...navForm, target: e.target.value })}
+              label="Icon"
+              value={socialForm.icon}
+              onChange={(e) => setSocialForm({ ...socialForm, icon: e.target.value })}
               options={[
-                { value: '_self', label: 'Same Tab' },
-                { value: '_blank', label: 'New Tab' },
+                { value: '', label: 'Select an icon' },
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'twitter', label: 'Twitter / X' },
+                { value: 'linkedin', label: 'LinkedIn' },
+                { value: 'youtube', label: 'YouTube' },
               ]}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Location"
-              value={navForm.location}
-              onChange={(e) => setNavForm({ ...navForm, location: e.target.value })}
-              options={[
-                { value: 'header', label: 'Header' },
-                { value: 'footer', label: 'Footer' },
-              ]}
+              required
             />
 
             <Input
               label="Display Order"
               type="number"
-              value={navForm.display_order.toString()}
-              onChange={(e) => setNavForm({ ...navForm, display_order: parseInt(e.target.value) || 0 })}
+              value={socialForm.display_order.toString()}
+              onChange={(e) => setSocialForm({ ...socialForm, display_order: parseInt(e.target.value) || 0 })}
               helperText="Lower numbers appear first"
             />
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="social-active"
+                checked={socialForm.is_active}
+                onChange={(e) => setSocialForm({ ...socialForm, is_active: e.target.checked })}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <label htmlFor="social-active" className="text-sm font-medium text-gray-700">
+                Active
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setSocialModal(false)} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={saveSocial} fullWidth>
+                {editingSocial ? 'Update' : 'Create'} Link
+              </Button>
+            </div>
           </div>
+        </Modal>
 
-          <Input
-            label="Icon (optional)"
-            value={navForm.icon}
-            onChange={(e) => setNavForm({ ...navForm, icon: e.target.value })}
-            placeholder="lucide-react icon name"
-          />
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="nav-active"
-              checked={navForm.is_active}
-              onChange={(e) => setNavForm({ ...navForm, is_active: e.target.checked })}
-              className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+        {/* Navigation Modal */}
+        <Modal
+          isOpen={navModal}
+          onClose={() => setNavModal(false)}
+          title={editingNav ? 'Edit Navigation Item' : 'Add Navigation Item'}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <Input
+              label="Label"
+              value={navForm.label}
+              onChange={(e) => setNavForm({ ...navForm, label: e.target.value })}
+              required
             />
-            <label htmlFor="nav-active" className="text-sm font-medium text-gray-700">
-              Active
-            </label>
-          </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setNavModal(false)} fullWidth>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={saveNav} fullWidth>
-              {editingNav ? 'Update' : 'Create'} Nav Item
-            </Button>
+            <Input
+              label="Href / URL"
+              value={navForm.href}
+              onChange={(e) => setNavForm({ ...navForm, href: e.target.value })}
+              placeholder="/products or https://example.com"
+              required
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Type"
+                value={navForm.type}
+                onChange={(e) => setNavForm({ ...navForm, type: e.target.value })}
+                options={[
+                  { value: 'link', label: 'Link' },
+                  { value: 'button', label: 'Button' },
+                  { value: 'dropdown', label: 'Dropdown' },
+                  { value: 'group', label: 'Group' },
+                ]}
+                required
+              />
+
+              <Select
+                label="Target"
+                value={navForm.target}
+                onChange={(e) => setNavForm({ ...navForm, target: e.target.value })}
+                options={[
+                  { value: '_self', label: 'Same Tab' },
+                  { value: '_blank', label: 'New Tab' },
+                ]}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Location"
+                value={navForm.location}
+                onChange={(e) => setNavForm({ ...navForm, location: e.target.value })}
+                options={[
+                  { value: 'header', label: 'Header' },
+                  { value: 'footer', label: 'Footer' },
+                ]}
+              />
+
+              <Input
+                label="Display Order"
+                type="number"
+                value={navForm.display_order.toString()}
+                onChange={(e) => setNavForm({ ...navForm, display_order: parseInt(e.target.value) || 0 })}
+                helperText="Lower numbers appear first"
+              />
+            </div>
+
+            <Input
+              label="Icon (optional)"
+              value={navForm.icon}
+              onChange={(e) => setNavForm({ ...navForm, icon: e.target.value })}
+              placeholder="lucide-react icon name"
+            />
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="nav-active"
+                checked={navForm.is_active}
+                onChange={(e) => setNavForm({ ...navForm, is_active: e.target.checked })}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <label htmlFor="nav-active" className="text-sm font-medium text-gray-700">
+                Active
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setNavModal(false)} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={saveNav} fullWidth>
+                {editingNav ? 'Update' : 'Create'} Nav Item
+              </Button>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
       </div>
     </AdminAuth>
   )

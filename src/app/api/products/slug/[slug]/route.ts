@@ -3,11 +3,11 @@ import { getDb } from '@/lib/db'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const db = getDb()
-    const { slug } = params
+    const { slug } = await params
 
     // Get product with category name
     const product = db
@@ -26,7 +26,7 @@ export async function GET(
         WHERE p.slug = ? AND p.is_active = 1
       `
       )
-      .get(slug)
+      .get(slug) as any
 
     if (!product) {
       return NextResponse.json(
