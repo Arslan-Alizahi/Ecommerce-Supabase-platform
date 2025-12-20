@@ -11,7 +11,7 @@ import Modal from '@/components/ui/Modal'
 import { AdminAuth } from '@/components/ui/AdminAuth'
 import {
   ArrowLeft, Download, Filter, Search,
-  Store, Receipt, ChevronLeft, ChevronRight, Eye
+  Store, ChevronLeft, ChevronRight, Eye
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -183,9 +183,8 @@ export default function TransactionsPage() {
                     value={filters.type}
                     onChange={(e) => handleFilterChange('type', e.target.value)}
                     options={[
-                      { value: 'all', label: 'All Sources' },
-                      { value: 'store', label: 'Online Store' },
-                      { value: 'billing', label: 'Local Billing' },
+                      { value: 'all', label: 'All Orders' },
+                      { value: 'order', label: 'Online Orders' },
                     ]}
                   />
                 </div>
@@ -295,24 +294,9 @@ export default function TransactionsPage() {
                     transactions.map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.transaction_type === 'store'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {transaction.transaction_type === 'store' ? (
-                              <>
-                                <Store className="h-3 w-3 mr-1" />
-                                Store
-                              </>
-                            ) : (
-                              <>
-                                <Receipt className="h-3 w-3 mr-1" />
-                                Billing
-                              </>
-                            )}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <Store className="h-3 w-3 mr-1" />
+                            Order
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -441,24 +425,9 @@ export default function TransactionsPage() {
               {/* Transaction Type & Status */}
               <div className="flex items-center justify-between pb-4 border-b">
                 <div>
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      selectedTransaction.transaction_type === 'store'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {selectedTransaction.transaction_type === 'store' ? (
-                      <>
-                        <Store className="h-4 w-4 mr-2" />
-                        Online Store
-                      </>
-                    ) : (
-                      <>
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Local Billing
-                      </>
-                    )}
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <Store className="h-4 w-4 mr-2" />
+                    Online Order
                   </span>
                 </div>
                 <div className="text-right">

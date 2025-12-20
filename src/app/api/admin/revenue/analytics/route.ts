@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'month' // day, week, month, year
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
-    const type = searchParams.get('type') // 'store' or 'billing' or 'all'
+    const type = searchParams.get('type') // 'order' or 'all'
 
     const db = getDb()
 

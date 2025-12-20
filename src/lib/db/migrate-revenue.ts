@@ -25,7 +25,7 @@ export const migrateRevenue = () => {
     db.exec(`
       CREATE TABLE IF NOT EXISTS revenue_transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        transaction_type TEXT NOT NULL,
+        transaction_type TEXT NOT NULL DEFAULT 'order',
         reference_id INTEGER NOT NULL,
         reference_number TEXT NOT NULL,
         customer_name TEXT,
@@ -49,47 +49,12 @@ export const migrateRevenue = () => {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_revenue_transaction_type ON revenue_transactions(transaction_type);
       CREATE INDEX IF NOT EXISTS idx_revenue_transaction_date ON revenue_transactions(transaction_date);
-      CREATE INDEX IF NOT EXISTS idx_revenue_reference ON revenue_transactions(transaction_type, reference_id);
+      CREATE INDEX IF NOT EXISTS idx_revenue_reference ON revenue_transactions(reference_id);
     `)
     console.log('✓ Indexes created')
 
-    // Create triggers
+    // Create triggers for order revenue tracking
     db.exec(`
-      -- Auto-create revenue transaction when billing receipt is created
-      CREATE TRIGGER IF NOT EXISTS create_revenue_from_billing
-      AFTER INSERT ON billing_receipts
-      BEGIN
-        INSERT INTO revenue_transactions (
-          transaction_type,
-          reference_id,
-          reference_number,
-          customer_name,
-          customer_phone,
-          subtotal,
-          tax,
-          discount,
-          total,
-          payment_method,
-          payment_status,
-          notes,
-          transaction_date
-        ) VALUES (
-          'billing',
-          NEW.id,
-          NEW.receipt_number,
-          NEW.customer_name,
-          NEW.customer_phone,
-          NEW.subtotal,
-          NEW.tax,
-          NEW.discount,
-          NEW.total,
-          NEW.payment_method,
-          'completed',
-          NEW.notes,
-          NEW.created_at
-        );
-      END;
-
       -- Auto-create revenue transaction when order is created (only if paid)
       CREATE TRIGGER IF NOT EXISTS create_revenue_from_order
       AFTER INSERT ON orders
@@ -112,7 +77,7 @@ export const migrateRevenue = () => {
           notes,
           transaction_date
         ) VALUES (
-          'store',
+          'order',
           NEW.id,
           NEW.order_number,
           NEW.customer_name,
@@ -130,7 +95,7 @@ export const migrateRevenue = () => {
         );
       END;
 
-      -- Update revenue transaction when order payment status changes to completed
+      -- Create revenue transaction when order payment status changes to completed (for COD orders marked as paid)
       CREATE TRIGGER IF NOT EXISTS update_revenue_on_order_payment
       AFTER UPDATE ON orders
       WHEN (OLD.payment_status != 'completed' AND OLD.payment_status != 'paid')
@@ -153,7 +118,7 @@ export const migrateRevenue = () => {
           notes,
           transaction_date
         ) VALUES (
-          'store',
+          'order',
           NEW.id,
           NEW.order_number,
           NEW.customer_name,
@@ -173,55 +138,7 @@ export const migrateRevenue = () => {
     `)
     console.log('✓ Triggers created')
 
-    // Migrate existing data - import historical billing receipts
-    const existingReceipts = db.prepare(`
-      SELECT * FROM billing_receipts ORDER BY created_at ASC
-    `).all()
-
-    if (existingReceipts.length > 0) {
-      const insertStmt = db.prepare(`
-        INSERT INTO revenue_transactions (
-          transaction_type,
-          reference_id,
-          reference_number,
-          customer_name,
-          customer_phone,
-          subtotal,
-          tax,
-          discount,
-          total,
-          payment_method,
-          payment_status,
-          notes,
-          transaction_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-
-      const insertMany = db.transaction((receipts: any[]) => {
-        for (const receipt of receipts) {
-          insertStmt.run(
-            'billing',
-            receipt.id,
-            receipt.receipt_number,
-            receipt.customer_name,
-            receipt.customer_phone,
-            receipt.subtotal,
-            receipt.tax,
-            receipt.discount,
-            receipt.total,
-            receipt.payment_method,
-            'completed',
-            receipt.notes,
-            receipt.created_at
-          )
-        }
-      })
-
-      insertMany(existingReceipts)
-      console.log(`✓ Migrated ${existingReceipts.length} existing billing receipts`)
-    }
-
-    // Migrate existing orders (only completed/paid ones)
+    // Migrate existing paid orders
     const existingOrders = db.prepare(`
       SELECT * FROM orders
       WHERE payment_status = 'completed' OR payment_status = 'paid'
@@ -252,7 +169,7 @@ export const migrateRevenue = () => {
       const insertMany = db.transaction((orders: any[]) => {
         for (const order of orders) {
           insertStmt.run(
-            'store',
+            'order',
             order.id,
             order.order_number,
             order.customer_name,
@@ -272,7 +189,7 @@ export const migrateRevenue = () => {
       })
 
       insertMany(existingOrders)
-      console.log(`✓ Migrated ${existingOrders.length} existing store orders`)
+      console.log(`✓ Migrated ${existingOrders.length} existing orders`)
     }
 
     console.log('✅ Revenue migration completed successfully!')

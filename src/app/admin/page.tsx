@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [orders, setOrders] = useState<any[]>([])
-  const [receipts, setReceipts] = useState<any[]>([])
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([])
   const [navItems, setNavItems] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -105,14 +104,6 @@ export default function AdminPage() {
         if (data.success) setOrders(data.data || [])
       })
       .catch(error => console.error('Error fetching orders:', error))
-
-    // Fetch receipts
-    fetch('/api/billing')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setReceipts(data.data || [])
-      })
-      .catch(error => console.error('Error fetching receipts:', error))
 
     // Fetch social media links
     fetch('/api/social-media')
@@ -519,7 +510,7 @@ export default function AdminPage() {
                         Revenue Management
                       </h3>
                       <p className="text-gray-600">
-                        Track and analyze revenue from both online store and local billing
+                        Track and analyze revenue from online store orders
                       </p>
                     </div>
                     <div className="p-4 bg-primary-100 rounded-lg">
@@ -533,8 +524,8 @@ export default function AdminPage() {
                       <p className="text-lg font-bold text-gray-900">View Details</p>
                     </div>
                     <div className="bg-white rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-1">Store vs Billing</p>
-                      <p className="text-lg font-bold text-gray-900">Compare</p>
+                      <p className="text-sm text-gray-600 mb-1">Analytics</p>
+                      <p className="text-lg font-bold text-gray-900">View Trends</p>
                     </div>
                     <div className="bg-white rounded-lg p-4">
                       <p className="text-sm text-gray-600 mb-1">Export Data</p>

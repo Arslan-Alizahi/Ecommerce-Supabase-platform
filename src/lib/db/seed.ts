@@ -370,8 +370,7 @@ export const seedDatabase = (db: Database.Database) => {
     { label: 'Shop', href: '/products', display_order: 1 },
     { label: 'Categories', href: '#', display_order: 2 },
     { label: 'About', href: '/about', display_order: 3 },
-    { label: 'Billing', href: '/billing', display_order: 4 },
-    { label: 'Admin', href: '/admin', display_order: 5 },
+    { label: 'Admin', href: '/admin', display_order: 4 },
   ]
 
   const insertNav = db.prepare(`

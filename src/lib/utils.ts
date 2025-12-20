@@ -66,12 +66,6 @@ export const generateOrderNumber = (): string => {
   return `ORD-${timestamp}-${random}`
 }
 
-export const generateReceiptNumber = (): string => {
-  const timestamp = Date.now().toString(36).toUpperCase()
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase()
-  return `RCP-${timestamp}-${random}`
-}
-
 export const generateSKU = (productName: string): string => {
   const prefix = productName
     .split(' ')

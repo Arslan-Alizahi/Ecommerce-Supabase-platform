@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const type = searchParams.get('type') // 'store', 'billing', or 'all'
+    const type = searchParams.get('type') // 'order' or 'all'
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 

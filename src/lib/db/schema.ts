@@ -85,38 +85,6 @@ export const createTables = `
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
   );
 
-  -- Billing receipts table
-  CREATE TABLE IF NOT EXISTS billing_receipts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    receipt_number TEXT UNIQUE NOT NULL,
-    customer_name TEXT,
-    customer_phone TEXT,
-    subtotal DECIMAL(10, 2) NOT NULL,
-    tax DECIMAL(10, 2) DEFAULT 0,
-    discount DECIMAL(10, 2) DEFAULT 0,
-    total DECIMAL(10, 2) NOT NULL,
-    payment_method TEXT DEFAULT 'cash',
-    amount_paid DECIMAL(10, 2) NOT NULL,
-    change_amount DECIMAL(10, 2) DEFAULT 0,
-    notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  -- Billing items table
-  CREATE TABLE IF NOT EXISTS billing_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    receipt_id INTEGER NOT NULL,
-    product_id INTEGER,
-    product_name TEXT NOT NULL,
-    product_sku TEXT,
-    quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL,
-    subtotal DECIMAL(10, 2) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (receipt_id) REFERENCES billing_receipts(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
-  );
-
   -- Navigation items table
   CREATE TABLE IF NOT EXISTS nav_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,12 +115,12 @@ export const createTables = `
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  -- Revenue transactions table (tracks all revenue from store and billing)
+  -- Revenue transactions table (tracks revenue from online store orders)
   CREATE TABLE IF NOT EXISTS revenue_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_type TEXT NOT NULL, -- 'store' or 'billing'
-    reference_id INTEGER NOT NULL, -- order_id or receipt_id
-    reference_number TEXT NOT NULL, -- order_number or receipt_number
+    transaction_type TEXT NOT NULL DEFAULT 'order',
+    reference_id INTEGER NOT NULL,
+    reference_number TEXT NOT NULL,
     customer_name TEXT,
     customer_email TEXT,
     customer_phone TEXT,
@@ -176,13 +144,12 @@ export const createTables = `
   CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);
   CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(order_number);
   CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
-  CREATE INDEX IF NOT EXISTS idx_receipts_number ON billing_receipts(receipt_number);
   CREATE INDEX IF NOT EXISTS idx_nav_items_parent ON nav_items(parent_id);
   CREATE INDEX IF NOT EXISTS idx_nav_items_location ON nav_items(location);
   CREATE INDEX IF NOT EXISTS idx_social_media_display_order ON social_media_links(display_order);
   CREATE INDEX IF NOT EXISTS idx_revenue_transaction_type ON revenue_transactions(transaction_type);
   CREATE INDEX IF NOT EXISTS idx_revenue_transaction_date ON revenue_transactions(transaction_date);
-  CREATE INDEX IF NOT EXISTS idx_revenue_reference ON revenue_transactions(transaction_type, reference_id);
+  CREATE INDEX IF NOT EXISTS idx_revenue_reference ON revenue_transactions(reference_id);
 `;
 
 export const createTriggers = `
@@ -221,41 +188,6 @@ export const createTriggers = `
     UPDATE social_media_links SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
   END;
 
-  -- Auto-create revenue transaction when billing receipt is created
-  CREATE TRIGGER IF NOT EXISTS create_revenue_from_billing
-  AFTER INSERT ON billing_receipts
-  BEGIN
-    INSERT INTO revenue_transactions (
-      transaction_type,
-      reference_id,
-      reference_number,
-      customer_name,
-      customer_phone,
-      subtotal,
-      tax,
-      discount,
-      total,
-      payment_method,
-      payment_status,
-      notes,
-      transaction_date
-    ) VALUES (
-      'billing',
-      NEW.id,
-      NEW.receipt_number,
-      NEW.customer_name,
-      NEW.customer_phone,
-      NEW.subtotal,
-      NEW.tax,
-      NEW.discount,
-      NEW.total,
-      NEW.payment_method,
-      'completed',
-      NEW.notes,
-      NEW.created_at
-    );
-  END;
-
   -- Auto-create revenue transaction when order is created (only if paid)
   CREATE TRIGGER IF NOT EXISTS create_revenue_from_order
   AFTER INSERT ON orders
@@ -278,7 +210,7 @@ export const createTriggers = `
       notes,
       transaction_date
     ) VALUES (
-      'store',
+      'order',
       NEW.id,
       NEW.order_number,
       NEW.customer_name,
@@ -296,7 +228,7 @@ export const createTriggers = `
     );
   END;
 
-  -- Update revenue transaction when order payment status changes to completed
+  -- Create revenue transaction when order payment status changes to completed (for COD orders marked as paid)
   CREATE TRIGGER IF NOT EXISTS update_revenue_on_order_payment
   AFTER UPDATE ON orders
   WHEN (OLD.payment_status != 'completed' AND OLD.payment_status != 'paid')
@@ -319,7 +251,7 @@ export const createTriggers = `
       notes,
       transaction_date
     ) VALUES (
-      'store',
+      'order',
       NEW.id,
       NEW.order_number,
       NEW.customer_name,

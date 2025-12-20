@@ -10,8 +10,8 @@ import Input from '@/components/ui/Input'
 import { AdminAuth } from '@/components/ui/AdminAuth'
 import {
   DollarSign, TrendingUp, TrendingDown, ShoppingBag,
-  Download, Calendar, Store, Receipt, ArrowLeft,
-  BarChart3, Filter
+  Download, Calendar, Store, ArrowLeft,
+  BarChart3
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -40,7 +40,7 @@ interface RevenueOverview {
   }
   bySource: {
     store?: { total: number; count: number }
-    billing?: { total: number; count: number }
+    order?: { total: number; count: number }
   }
   paymentMethods: Array<{
     payment_method: string
@@ -136,7 +136,7 @@ export default function RevenuePage() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'transactions', label: 'Transactions', icon: Receipt },
+    { id: 'transactions', label: 'Transactions', icon: ShoppingBag },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
   ]
 
@@ -159,7 +159,7 @@ export default function RevenuePage() {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Revenue Management</h1>
-                <p className="text-gray-600">Track revenue from store and local billing</p>
+                <p className="text-gray-600">Track revenue from online store orders</p>
               </div>
 
               <Button
@@ -273,62 +273,57 @@ export default function RevenuePage() {
             </Card>
           </div>
 
-          {/* Revenue by Source */}
+          {/* Revenue Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
-                <CardTitle>Revenue by Source</CardTitle>
+                <CardTitle>Revenue Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Store Revenue */}
+                  {/* Online Store Revenue */}
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="p-2 bg-blue-100 rounded-lg">
                         <Store className="h-6 w-6 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">Online Store</p>
+                        <p className="font-semibold text-gray-900">Online Store Orders</p>
                         <p className="text-sm text-gray-500">
-                          {overview.bySource.store?.count || 0} transactions
+                          {overview.total.transactions} completed orders
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold text-blue-600">
-                        {formatCurrency(overview.bySource.store?.total || 0)}
+                        {formatCurrency(overview.total.revenue)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {overview.total.revenue > 0
-                          ? ((overview.bySource.store?.total || 0) / overview.total.revenue * 100).toFixed(1)
-                          : 0}%
+                        Total revenue
                       </p>
                     </div>
                   </div>
 
-                  {/* Billing Revenue */}
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Receipt className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">Local Shop Billing</p>
-                        <p className="text-sm text-gray-500">
-                          {overview.bySource.billing?.count || 0} transactions
-                        </p>
-                      </div>
+                  {/* Tax Collected */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-gray-900">Tax Collected</p>
+                      <p className="text-sm text-gray-500">From all orders</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-green-600">
-                        {formatCurrency(overview.bySource.billing?.total || 0)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {overview.total.revenue > 0
-                          ? ((overview.bySource.billing?.total || 0) / overview.total.revenue * 100).toFixed(1)
-                          : 0}%
-                      </p>
+                    <p className="text-lg font-bold text-gray-700">
+                      {formatCurrency(overview.total.tax)}
+                    </p>
+                  </div>
+
+                  {/* Discounts Given */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-gray-900">Discounts Given</p>
+                      <p className="text-sm text-gray-500">Total discounts applied</p>
                     </div>
+                    <p className="text-lg font-bold text-red-600">
+                      -{formatCurrency(overview.total.discount)}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -400,24 +395,9 @@ export default function RevenuePage() {
                     {overview.recentTransactions.map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.transaction_type === 'store'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {transaction.transaction_type === 'store' ? (
-                              <>
-                                <Store className="h-3 w-3 mr-1" />
-                                Store
-                              </>
-                            ) : (
-                              <>
-                                <Receipt className="h-3 w-3 mr-1" />
-                                Billing
-                              </>
-                            )}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <Store className="h-3 w-3 mr-1" />
+                            Order
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
