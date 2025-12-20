@@ -1,13 +1,21 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Bodoni_Moda } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/components/ui/Toast'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+const bodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  variable: '--font-bodoni',
+})
 
 export const metadata: Metadata = {
-  title: 'Pak Madina - Mobile Shop & eCommerce',
-  description: 'Pak Madina Mobile Shop - Your trusted mobile store in Haripur, KPK. Quality products and exceptional service.',
+  title: 'ZinyasRang | Premium Luxury Fashion',
+  description: 'Experience the essence of elegance with ZinyasRang. Curated luxury fashion collections designed for the modern individual.',
 }
 
 export default function RootLayout({
@@ -16,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-gray-50`}>
+    <html lang="en" className={`${inter.variable} ${bodoni.variable}`}>
+      <body className={`${inter.className} min-h-screen bg-white text-zinc-900 antialiased`}>
         <ToastProvider>
           {children}
         </ToastProvider>

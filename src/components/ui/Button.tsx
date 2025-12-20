@@ -6,33 +6,30 @@ import { cn } from '@/lib/cn'
 import { Loader2 } from 'lucide-react'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed btn-hover-lift',
+  'inline-flex items-center justify-center rounded-none font-medium tracking-wide border transition-all duration-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed uppercase text-xs',
   {
     variants: {
       variant: {
         primary:
-          'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
+          'bg-zinc-950 text-white border-zinc-950 hover:bg-zinc-800 focus:ring-1 focus:ring-zinc-950',
         secondary:
-          'bg-primary-100 text-primary-900 hover:bg-primary-200 focus:ring-primary-500',
-        success:
-          'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
-        danger:
-          'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-        warning:
-          'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500',
+          'bg-white text-zinc-950 border-zinc-200 hover:border-zinc-950',
         outline:
-          'border-2 border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-gray-500',
+          'border-zinc-950 bg-transparent text-zinc-950 hover:bg-zinc-950 hover:text-white',
         ghost:
-          'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-500',
+          'border-transparent bg-transparent text-zinc-600 hover:text-zinc-950',
         link:
-          'bg-transparent underline-offset-4 hover:underline text-primary-600 hover:text-primary-700',
+          'border-transparent bg-transparent underline-offset-8 hover:underline text-zinc-900 lowercase',
+        success: 'bg-zinc-900 text-white border-zinc-900',
+        danger: 'bg-red-950 text-white border-red-950',
+        warning: 'bg-stone-200 text-stone-900 border-stone-200',
       },
       size: {
-        sm: 'text-sm px-3 py-1.5',
-        md: 'text-sm px-4 py-2',
-        lg: 'text-base px-6 py-3',
-        xl: 'text-lg px-8 py-4',
-        icon: 'h-9 w-9 p-0',
+        sm: 'px-4 py-2',
+        md: 'px-6 py-3',
+        lg: 'px-10 py-4 text-sm',
+        xl: 'px-12 py-5 text-base',
+        icon: 'h-10 w-10 p-0',
       },
       fullWidth: {
         true: 'w-full',
@@ -47,7 +44,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   isLoading?: boolean
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode

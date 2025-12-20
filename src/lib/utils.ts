@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
 // Formatting utilities
 export const formatCurrency = (amount: number, currency: string = 'PKR'): string => {
   const symbol = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'Rs. '

@@ -38,19 +38,18 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-40">
+    <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-zinc-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <Package className="h-8 w-8 text-primary-600" />
-              <span className="text-xl font-bold gradient-text">Pak Madina</span>
+            <Link href="/" className="group">
+              <span className="text-2xl font-serif tracking-tight text-zinc-950 group-hover:text-zinc-600 transition-colors">ZinyasRang</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-10">
             {navLinks.map((link) => {
               const Icon = getIcon(link.icon)
               return (
@@ -58,9 +57,8 @@ export default function Navbar() {
                   key={link.id}
                   href={link.href}
                   target={link.target || '_self'}
-                  className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center gap-1"
+                  className="text-[11px] uppercase tracking-[0.2em] font-medium text-zinc-500 hover:text-zinc-950 transition-colors duration-300"
                 >
-                  {Icon && <Icon className="h-4 w-4" />}
                   {link.label}
                 </Link>
               )
@@ -68,15 +66,15 @@ export default function Navbar() {
           </div>
 
           {/* Favorites, Cart & Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <Link
               href="/favorites"
-              className="relative p-2 text-gray-700 hover:text-red-500 transition-colors"
+              className="relative p-2 text-zinc-600 hover:text-zinc-950 transition-colors"
               title="Favorites"
             >
-              <Heart className="h-6 w-6" />
+              <Heart className="h-5 w-5" strokeWidth={1.5} />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-scale-in">
+                <span className="absolute top-1 right-1 bg-zinc-950 text-white text-[8px] rounded-0 h-3 w-3 flex items-center justify-center font-bold">
                   {favoritesCount}
                 </span>
               )}
@@ -84,12 +82,12 @@ export default function Navbar() {
 
             <Link
               href="/cart"
-              className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors"
+              className="relative p-2 text-zinc-600 hover:text-zinc-950 transition-colors"
               title="Shopping Cart"
             >
-              <ShoppingCart className="h-6 w-6" />
+              <ShoppingCart className="h-5 w-5" strokeWidth={1.5} />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-scale-in">
+                <span className="absolute top-1 right-1 bg-zinc-950 text-white text-[8px] rounded-0 h-3 w-3 flex items-center justify-center font-bold">
                   {itemCount}
                 </span>
               )}
@@ -99,9 +97,9 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:text-primary-600 transition-colors"
+              className="md:hidden p-2 text-zinc-600 hover:text-zinc-950 transition-colors"
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-6 w-6" strokeWidth={1.5} /> : <Menu className="h-6 w-6" strokeWidth={1.5} />}
             </button>
           </div>
         </div>
@@ -117,36 +115,31 @@ export default function Navbar() {
             transition={{ duration: 0.3 }}
             className="md:hidden bg-white border-t overflow-hidden"
           >
-            <div className="px-4 py-2 space-y-1">
+            <div className="px-6 py-8 space-y-6">
               {navLinks.map((link) => {
-                const Icon = getIcon(link.icon)
                 return (
                   <Link
                     key={link.id}
                     href={link.href}
                     target={link.target || '_self'}
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                    className="block text-[11px] uppercase tracking-[0.2em] font-medium text-zinc-500 hover:text-zinc-950 transition-colors"
                   >
-                    {Icon && <Icon className="h-5 w-5" />}
-                    <span>{link.label}</span>
+                    {link.label}
                   </Link>
                 )
               })}
 
               {/* Favorites & Cart Links */}
-              <div className="border-t pt-2 mt-2">
+              <div className="border-t border-zinc-100 pt-8 mt-8 space-y-6">
                 <Link
                   href="/favorites"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] font-medium text-zinc-500 hover:text-zinc-950 transition-colors"
                 >
-                  <div className="flex items-center space-x-3">
-                    <Heart className="h-5 w-5" />
-                    <span>Favorites</span>
-                  </div>
+                  <span>Favorites</span>
                   {favoritesCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="bg-zinc-950 text-white text-[8px] h-4 w-4 flex items-center justify-center font-bold">
                       {favoritesCount}
                     </span>
                   )}
@@ -155,14 +148,11 @@ export default function Navbar() {
                 <Link
                   href="/cart"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] font-medium text-zinc-500 hover:text-zinc-950 transition-colors"
                 >
-                  <div className="flex items-center space-x-3">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Shopping Cart</span>
-                  </div>
+                  <span>Shopping Cart</span>
                   {itemCount > 0 && (
-                    <span className="bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    <span className="bg-zinc-950 text-white text-[8px] h-4 w-4 flex items-center justify-center font-bold">
                       {itemCount}
                     </span>
                   )}

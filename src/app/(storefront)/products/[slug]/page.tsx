@@ -9,9 +9,12 @@ import { ShoppingCart, Heart, Share2, ChevronRight, Minus, Plus, Check, X } from
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
 import { useCart } from '@/hooks/useCart'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useToast } from '@/components/ui/Toast'
+import { formatCurrency, cn } from '@/lib/utils'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -132,8 +135,8 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-b-2 border-zinc-950"></div>
       </div>
     )
   }
@@ -143,86 +146,44 @@ export default function ProductDetailPage() {
   }
 
   const inStock = product.stock_quantity > 0
-  const lowStock = product.stock_quantity > 0 && product.stock_quantity <= (product.low_stock_threshold || 5)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-      <div className="container mx-auto px-4">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 overflow-x-auto pb-2">
-          <Link href="/" className="hover:text-primary-600 transition-colors whitespace-nowrap">
-            Home
-          </Link>
-          <ChevronRight className="w-4 h-4 flex-shrink-0" />
-          <Link href="/products" className="hover:text-primary-600 transition-colors whitespace-nowrap">
-            Products
-          </Link>
-          {product.parent_category_name && product.parent_category_id && (
-            <>
-              <ChevronRight className="w-4 h-4 flex-shrink-0" />
-              <Link
-                href={`/products?category=${product.parent_category_id}`}
-                className="hover:text-primary-600 transition-colors max-w-[100px] sm:max-w-none truncate"
-              >
-                {product.parent_category_name}
-              </Link>
-            </>
-          )}
-          {product.category_name && product.category_id && (
-            <>
-              <ChevronRight className="w-4 h-4 flex-shrink-0" />
-              <Link
-                href={`/products?category=${product.category_id}`}
-                className="hover:text-primary-600 transition-colors max-w-[100px] sm:max-w-none truncate"
-              >
-                {product.category_name}
-              </Link>
-            </>
-          )}
-          <ChevronRight className="w-4 h-4 flex-shrink-0" />
-          <span className="text-gray-900 font-medium max-w-[150px] sm:max-w-none truncate">{product.name}</span>
-        </nav>
+    <div className="min-h-screen bg-white">
+      <Navbar />
 
-        {/* Product Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 mb-16">
-          {/* Image Gallery */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+
+          {/* Immersive Gallery */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
           >
-            <Card className="overflow-hidden">
-              <div className="aspect-square relative bg-white">
-                <Image
-                  src={product.images?.[selectedImage]?.image_url || '/placeholder.png'}
-                  alt={product.images?.[selectedImage]?.alt_text || product.name}
-                  fill
-                  className="object-contain p-8"
-                  priority
-                />
-              </div>
-            </Card>
+            <div className="aspect-[3/4] relative bg-zinc-50 overflow-hidden">
+              <img
+                src={product.images?.[selectedImage]?.image_url || '/placeholder.png'}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-            {/* Thumbnail Gallery */}
             {product.images && product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-4 mt-4">
+              <div className="grid grid-cols-4 gap-4">
                 {product.images.map((image: any, index: number) => (
                   <button
                     key={image.id}
-                    type="button"
                     onClick={() => setSelectedImage(index)}
-                    aria-label={`View image ${index + 1}`}
-                    className={`aspect-square relative rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index
-                        ? 'border-primary-600 ring-2 ring-primary-200'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={cn(
+                      "aspect-[3/4] relative overflow-hidden transition-all duration-300",
+                      selectedImage === index ? "opacity-100 ring-1 ring-zinc-950" : "opacity-40 hover:opacity-100"
+                    )}
                   >
-                    <Image
+                    <img
                       src={image.image_url}
                       alt={image.alt_text || product.name}
-                      fill
-                      className="object-contain p-2"
+                      className="w-full h-full object-cover"
                     />
                   </button>
                 ))}
@@ -230,164 +191,141 @@ export default function ProductDetailPage() {
             )}
           </motion.div>
 
-          {/* Product Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-6"
-          >
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">{product.name}</h1>
-              <p className="text-gray-600 text-sm sm:text-base">{product.description}</p>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-baseline space-x-4">
-              <span className="text-4xl font-bold text-primary-600">
-                ${product.price.toFixed(2)}
-              </span>
-              {product.compare_at_price && product.compare_at_price > product.price && (
-                <span className="text-2xl text-gray-400 line-through">
-                  ${product.compare_at_price.toFixed(2)}
-                </span>
-              )}
-            </div>
-
-            {/* Stock Status */}
-            <div className="flex items-center space-x-3">
-              {inStock ? (
-                <>
-                  <div className="flex items-center text-green-600">
-                    <Check className="w-5 h-5 mr-2" />
-                    <span className="font-medium">In Stock</span>
-                  </div>
-                  {lowStock && (
-                    <Badge variant="warning">Only {product.stock_quantity} left!</Badge>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center text-red-600">
-                  <X className="w-5 h-5 mr-2" />
-                  <span className="font-medium">Out of Stock</span>
-                </div>
-              )}
-            </div>
-
-            {/* SKU */}
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">SKU:</span> {product.sku}
-            </div>
-
-            {/* Quantity Selector */}
-            {inStock && (
+          {/* Product Info - Editorial Style */}
+          <div className="flex flex-col h-full py-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="space-y-12"
+            >
               <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-700 font-medium">Quantity:</span>
-                  <div className="flex items-center border border-gray-300 rounded-lg">
-                    <button
-                      type="button"
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                      aria-label="Decrease quantity"
-                      className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="px-6 py-2 font-medium">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={incrementQuantity}
-                      disabled={quantity >= product.stock_quantity}
-                      aria-label="Increase quantity"
-                      className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Add to Cart Button */}
-                <div className="flex space-x-4">
-                  <Button
-                    onClick={handleAddToCart}
-                    size="lg"
-                    className="flex-1"
-                  >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Add to Cart
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={handleToggleFavorite}
-                    className={product && checkIsFavorite(product.id) ? 'text-red-500 border-red-500 hover:bg-red-50' : ''}
-                  >
-                    <Heart className={`w-5 h-5 ${product && checkIsFavorite(product.id) ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </Button>
+                <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 block">Garment Details</span>
+                <h1 className="text-4xl md:text-5xl font-serif tracking-tight text-zinc-950 leading-tight">
+                  {product.name}
+                </h1>
+                <div className="flex items-center gap-6 pt-2">
+                  <span className="text-2xl font-medium text-zinc-950">
+                    {formatCurrency(product.price)}
+                  </span>
+                  {product.compare_at_price && product.compare_at_price > product.price && (
+                    <span className="text-lg text-zinc-300 line-through">
+                      {formatCurrency(product.compare_at_price)}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
 
-            {/* Long Description */}
-            {product.long_description && (
-              <Card className="p-6 bg-gray-50">
-                <h3 className="text-lg font-semibold mb-3">Product Details</h3>
-                <p className="text-gray-700 whitespace-pre-line">{product.long_description}</p>
-              </Card>
-            )}
-          </motion.div>
+              <div className="space-y-6">
+                <p className="text-zinc-600 leading-loose tracking-wide text-sm">
+                  {product.description}
+                </p>
+                <div className="text-[10px] uppercase tracking-widest text-zinc-400 flex items-center gap-4">
+                  <span>Reference: {product.sku}</span>
+                  <span className="h-3 w-[1px] bg-zinc-100"></span>
+                  <span className={inStock ? "text-zinc-950" : "text-red-500"}>
+                    {inStock ? "Available in Selection" : "Temporarily Archived"}
+                  </span>
+                </div>
+              </div>
+
+              {inStock && (
+                <div className="space-y-10 pt-4">
+                  {/* Quantity - Minimalist */}
+                  <div className="flex items-center gap-12">
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Quantity</span>
+                    <div className="flex items-center gap-8 border-b border-zinc-200 pb-2">
+                      <button onClick={decrementQuantity} disabled={quantity <= 1} className="text-zinc-400 hover:text-zinc-950 disabled:opacity-20"><Minus className="h-3 w-3" /></button>
+                      <span className="text-sm font-bold min-w-[1rem] text-center">{quantity}</span>
+                      <button onClick={incrementQuantity} disabled={quantity >= product.stock_quantity} className="text-zinc-400 hover:text-zinc-950 disabled:opacity-20"><Plus className="h-3 w-3" /></button>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <Button
+                      onClick={handleAddToCart}
+                      className="flex-1 py-6 bg-zinc-950 text-white hover:bg-zinc-800 tracking-widest uppercase text-[11px]"
+                    >
+                      Add To Selection
+                    </Button>
+                    <div className="flex gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleToggleFavorite}
+                        className={cn(
+                          "p-6 border-zinc-200",
+                          checkIsFavorite(product.id) ? "text-red-500 border-red-100 bg-red-50" : "text-zinc-950"
+                        )}
+                      >
+                        <Heart className={cn("h-4 w-4", checkIsFavorite(product.id) && "fill-current")} />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleShare}
+                        className="p-6 border-zinc-200 text-zinc-950"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Details sections */}
+              <div className="space-y-8 pt-12 border-t border-zinc-100">
+                <div className="space-y-4">
+                  <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-zinc-950">Materials & Care</h3>
+                  <p className="text-xs text-zinc-500 leading-loose tracking-wide">
+                    Meticulously sourced fabrics combined with expert craftsmanship.
+                    Dry clean only to maintain the garment's structural integrity.
+                  </p>
+                </div>
+                {product.long_description && (
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] uppercase tracking-[0.3em] font-bold text-zinc-950">Manifesto</h3>
+                    <p className="text-xs text-zinc-500 leading-loose tracking-wide">
+                      {product.long_description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
 
-        {/* Related Products */}
+        {/* Related - Minimalist Carousel feel */}
         {product.relatedProducts && product.relatedProducts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Related Products</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {product.relatedProducts.map((relatedProduct: any) => (
-                <Link key={relatedProduct.id} href={`/products/${relatedProduct.slug}`}>
-                  <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300">
-                    <div className="aspect-square relative bg-white overflow-hidden">
-                      <Image
-                        src={relatedProduct.primary_image || '/placeholder.png'}
-                        alt={relatedProduct.name}
-                        fill
-                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {relatedProduct.name}
-                      </h3>
-                      <div className="flex items-baseline space-x-2">
-                        <span className="text-lg font-bold text-primary-600">
-                          ${relatedProduct.price.toFixed(2)}
-                        </span>
-                        {relatedProduct.compare_at_price && (
-                          <span className="text-sm text-gray-400 line-through">
-                            ${relatedProduct.compare_at_price.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
+          <div className="mt-40 border-t border-zinc-100 pt-32">
+            <div className="flex justify-between items-end mb-16">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 block mb-4">Discovery</span>
+                <h2 className="text-3xl font-serif tracking-tight text-zinc-950">You May Also Seek</h2>
+              </div>
+              <Link href="/products" className="text-[10px] uppercase tracking-widest font-bold border-b border-zinc-950 pb-1">View All</Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+              {product.relatedProducts.map((related: any) => (
+                <Link key={related.id} href={`/products/${related.slug}`} className="group">
+                  <div className="aspect-[3/4] bg-zinc-50 overflow-hidden mb-6">
+                    <img
+                      src={related.primary_image || '/placeholder.png'}
+                      alt={related.name}
+                      className="w-full h-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-serif text-zinc-950 group-hover:text-zinc-500 transition-colors">{related.name}</h3>
+                    <span className="text-xs text-zinc-400 font-medium">{formatCurrency(related.price)}</span>
+                  </div>
                 </Link>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

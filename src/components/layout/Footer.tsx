@@ -82,49 +82,31 @@ export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-20">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <Link href="/" className="inline-flex items-center space-x-2 mb-4 group">
-              <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-2 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                <ShoppingBag className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-                Pak Madina
+            <Link href="/" className="inline-flex items-center mb-6 group">
+              <span className="text-3xl font-serif tracking-tight text-white group-hover:text-zinc-400 transition-colors">
+                ZinyasRang
               </span>
             </Link>
-            <p className="text-gray-400 mb-6 leading-relaxed">
-              Your trusted mobile shop in Haripur. Quality mobile phones, accessories, and exceptional service.
-              Shop with confidence at Pak Madina Mobile.
+            <p className="text-zinc-400 mb-8 leading-relaxed text-sm tracking-wide">
+              Defining modern elegance through curated luxury fashion. ZinyasRang represents the intersection of timeless silhouettes and contemporary editorial design.
             </p>
 
             {/* Contact Info */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <a
-                href="mailto:info@pakmadina.pk"
-                className="flex items-center text-gray-400 hover:text-primary-400 transition-colors group"
+                href="mailto:concierge@zinyasrang.com"
+                className="flex items-center text-zinc-400 hover:text-white transition-colors group text-xs tracking-widest uppercase"
               >
-                <Mail className="h-4 w-4 mr-3 text-primary-500 group-hover:scale-110 transition-transform" />
-                <span className="text-sm">info@pakmadina.pk</span>
+                <Mail className="h-3 w-3 mr-4 text-zinc-500" />
+                <span>concierge@zinyasrang.com</span>
               </a>
-              <a
-                href="tel:+923215737856"
-                className="flex items-center text-gray-400 hover:text-primary-400 transition-colors group"
-              >
-                <Phone className="h-4 w-4 mr-3 text-primary-500 group-hover:scale-110 transition-transform" />
-                <span className="text-sm">0321-5737856</span>
-              </a>
-              <a
-                href="tel:+923180553648"
-                className="flex items-center text-gray-400 hover:text-primary-400 transition-colors group"
-              >
-                <Phone className="h-4 w-4 mr-3 text-primary-500 group-hover:scale-110 transition-transform" />
-                <span className="text-sm">0318-0553648</span>
-              </a>
-              <div className="flex items-start text-gray-400">
-                <MapPin className="h-4 w-4 mr-3 text-primary-500 mt-1 flex-shrink-0" />
-                <span className="text-sm">Pak Madina Mobile, Ameer Khan Silkway Plaza<br />G.T Road, Haripur, KPK, Pakistan</span>
+              <div className="flex items-start text-zinc-400 text-xs tracking-widest uppercase py-2">
+                <MapPin className="h-3 w-3 mr-4 text-zinc-500 mt-1 flex-shrink-0" />
+                <span>Global Flagship Store<br />Editorial District, NY</span>
               </div>
             </div>
           </div>
@@ -144,7 +126,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-gray-400 hover:text-primary-400 transition-colors text-sm inline-block hover:translate-x-1 duration-200"
+                      className="text-zinc-400 hover:text-white transition-colors text-sm inline-block hover:translate-x-1 duration-200"
                     >
                       {link.label}
                     </Link>
@@ -161,20 +143,20 @@ export default function Footer() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           viewport={{ once: true }}
-          className="mt-12 pt-8 border-t border-gray-700"
+          className="mt-20 pt-12 border-t border-zinc-800"
         >
           <div className="max-w-md mx-auto text-center">
-            <h3 className="text-xl font-bold mb-2">Stay Updated</h3>
-            <p className="text-gray-400 mb-4 text-sm">
-              Subscribe to our newsletter for exclusive deals and updates
+            <h3 className="text-xl font-serif mb-4">The Editorial List</h3>
+            <p className="text-zinc-400 mb-8 text-xs uppercase tracking-widest">
+              Join for exclusive collection previews and editorial updates
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-0 border border-zinc-800 overflow-hidden">
               <input
                 type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-white placeholder-gray-500"
+                placeholder="EMAIL ADDRESS"
+                className="flex-1 px-6 py-4 bg-transparent text-white placeholder-zinc-500 text-[10px] tracking-widest uppercase focus:outline-none"
               />
-              <button className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-lg font-medium transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary-500/30">
+              <button className="px-10 py-4 bg-white text-zinc-950 text-[10px] tracking-widest uppercase font-bold hover:bg-zinc-200 transition-colors">
                 Subscribe
               </button>
             </div>
@@ -183,73 +165,54 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-800 bg-gray-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+      <div className="border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex flex-col lg:flex-row justify-between items-center space-y-8 lg:space-y-0 text-zinc-400 text-[10px] tracking-widest uppercase">
             {/* Copyright */}
-            <div className="flex flex-col items-center md:items-start text-gray-400 text-sm space-y-1">
-              <div className="flex items-center">
-                <span>© {new Date().getFullYear()} Pak Madina. Made with</span>
-                <Heart className="h-4 w-4 mx-1 text-red-500 fill-current animate-pulse" />
-                <span>All rights reserved.</span>
-              </div>
-              <div className="text-xs text-gray-500">
-                Developed & Maintained by <a href="https://coding.zoo" target="_blank" rel="noopener noreferrer" className="text-primary-400 hover:text-primary-300 font-semibold">arslandevs (Coding.Zoo)</a>
-              </div>
+            <div className="flex flex-col items-center lg:items-start space-y-2">
+              <p>© {new Date().getFullYear()} ZinyasRang. All rights reserved.</p>
+              <p className="text-zinc-500">Curated with excellence in New York</p>
             </div>
 
             {/* Social Media Links */}
             {socialLinks.length > 0 && (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-400 text-sm mr-2">Follow us:</span>
-                <div className="flex space-x-3">
-                  {socialLinks.map((link) => {
-                    const IconComponent = iconMap[link.icon.toLowerCase()] || ShoppingBag
-                    return (
-                      <motion.a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        whileHover={{ scale: 1.2, rotate: 5 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="bg-gray-800 hover:bg-gradient-to-br hover:from-primary-600 hover:to-primary-700 p-2.5 rounded-lg transition-all duration-300 group"
-                        title={link.platform}
-                      >
-                        <IconComponent className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
-                      </motion.a>
-                    )
-                  })}
-                </div>
+              <div className="flex items-center space-x-8">
+                {socialLinks.map((link) => {
+                  const IconComponent = iconMap[link.icon.toLowerCase()] || ShoppingBag
+                  return (
+                    <Link
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors"
+                    >
+                      <span className="sr-only">{link.platform}</span>
+                      <IconComponent className="h-4 w-4" strokeWidth={1.5} />
+                    </Link>
+                  )
+                })}
               </div>
             )}
 
             {/* Payment Methods */}
-            <div className="flex flex-wrap items-center gap-2 text-gray-500 text-xs">
-              <span className="whitespace-nowrap">We accept:</span>
-              <div className="flex flex-wrap gap-2">
-                {['Cash', 'Bank Transfer', 'JazzCash', 'EasyPaisa'].map((method) => (
-                  <div
-                    key={method}
-                    className="px-2 py-1 bg-gray-800 rounded text-xs font-semibold whitespace-nowrap"
-                  >
-                    {method}
-                  </div>
-                ))}
-              </div>
+            <div className="flex items-center space-x-6 text-zinc-500">
+              {['Visa', 'Mastercard', 'Amex', 'Apple Pay'].map((method) => (
+                <span key={method}>{method}</span>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Scroll to Top Button (Optional) */}
+      {/* Scroll to Top */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="fixed bottom-8 right-8 bg-gradient-to-br from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 p-3 rounded-full shadow-lg shadow-primary-500/50 text-white hover:scale-110 transition-transform duration-200 z-50"
+        className="fixed bottom-10 right-10 p-3 border border-zinc-200 bg-white/80 backdrop-blur-md text-zinc-950 hover:bg-zinc-950 hover:text-white transition-all duration-500 z-50 group shadow-luxury"
         aria-label="Scroll to top"
       >
         <svg
-          className="h-6 w-6"
+          className="h-5 w-5 transform group-hover:-translate-y-1 transition-transform"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -257,7 +220,7 @@ export default function Footer() {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={1.5}
             d="M5 10l7-7m0 0l7 7m-7-7v18"
           />
         </svg>
