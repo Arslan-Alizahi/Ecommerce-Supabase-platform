@@ -1,74 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { apiResponse, apiError } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const db = getDb()
     const { slug } = await params
+    const db = getDb()
 
-    // Get product with category name
-    const product = db
-      .prepare(
-        `
-        SELECT
-          p.*,
-          c.name as category_name,
-          c.slug as category_slug,
-          c.parent_id as parent_category_id,
-          pc.name as parent_category_name,
-          pc.slug as parent_category_slug
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        LEFT JOIN categories pc ON c.parent_id = pc.id
-        WHERE p.slug = ? AND p.is_active = 1
-      `
-      )
-      .get(slug) as any
+    // Get product with category and parent category
+    // Supabase nested joins for parent category
+    const { data: product, error: productError } = await db
+      .from('products')
+      .select(`
+        *,
+        category:categories!category_id(
+          name,
+          slug,
+          parent_id,
+          parent:categories!parent_id(
+            name,
+            slug
+          )
+        )
+      `)
+      .eq('slug', slug)
+      .eq('is_active', 1)
+      .single()
 
-    if (!product) {
+    if (productError || !product) {
+      console.error('Fetch error or not found:', productError)
       return NextResponse.json(
-        { error: 'Product not found' },
+        apiError('Product not found'),
         { status: 404 }
       )
     }
 
+    // Format the product to match the expected structure
+    const formattedProduct = {
+      ...product,
+      category_name: product.category?.name || null,
+      category_slug: product.category?.slug || null,
+      parent_category_id: product.category?.parent_id || null,
+      parent_category_name: product.category?.parent?.name || null,
+      parent_category_slug: product.category?.parent?.slug || null
+    }
+    delete formattedProduct.category
+
     // Get product images
-    const images = db
-      .prepare(
-        `
-        SELECT * FROM product_images 
-        WHERE product_id = ? 
-        ORDER BY display_order ASC, is_primary DESC
-      `
-      )
-      .all(product.id)
+    const { data: images, error: imagesError } = await db
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('display_order', { ascending: true })
+      .order('is_primary', { ascending: false })
+
+    if (imagesError) {
+      console.error('Images fetch error:', imagesError)
+    }
 
     // Get related products (same category, excluding current product)
-    const relatedProducts = db
-      .prepare(
-        `
-        SELECT 
-          p.*,
-          c.name as category_name,
-          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.category_id = ? 
-        AND p.id != ? 
-        AND p.is_active = 1
-        ORDER BY p.is_featured DESC, p.created_at DESC
-        LIMIT 4
-      `
-      )
-      .all(product.category_id, product.id)
+    const { data: relatedProducts, error: relatedError } = await db
+      .from('products')
+      .select(`
+        *,
+        category:categories(name),
+        images:product_images(image_url)
+      `)
+      .eq('category_id', product.category_id)
+      .neq('id', product.id)
+      .eq('is_active', 1)
+      .order('is_featured', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(4)
+
+    if (relatedError) {
+      console.error('Related products fetch error:', relatedError)
+    }
+
+    // Format related products to include primary_image
+    const formattedRelated = (relatedProducts || []).map((p: any) => {
+      const primaryImage = p.images?.find((img: any) => img.is_primary === 1)?.image_url ||
+        (p.images && p.images.length > 0 ? p.images[0].image_url : null)
+
+      const { category, images, ...rest } = p
+      return {
+        ...rest,
+        category_name: category?.name || null,
+        primary_image: primaryImage
+      }
+    })
 
     return NextResponse.json({
-      ...product,
-      images,
-      relatedProducts,
+      ...formattedProduct,
+      images: images || [],
+      relatedProducts: formattedRelated,
     })
   } catch (error) {
     console.error('Error fetching product:', error)

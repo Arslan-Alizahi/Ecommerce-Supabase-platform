@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb, runQuery, runInsert } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { Product, ProductFilter } from '@/types/product'
 import { apiResponse, apiError, generateSKU, slugify } from '@/lib/utils'
 
@@ -22,127 +22,98 @@ export async function GET(request: NextRequest) {
       limit: parseInt(searchParams.get('limit') || '12'),
     }
 
-    // Build SQL query
-    let sql = `
-      SELECT
-        p.*,
-        c.name as category_name,
-        (SELECT COUNT(*) FROM product_images WHERE product_id = p.id) as image_count,
-        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
-    `
+    const db = getDb()
 
-    const params: any[] = []
+    // Build query for products with category join
+    let query = db
+      .from('products')
+      .select(`
+        *,
+        category:categories(name)
+      `)
 
+    // Apply filters
     if (filters.is_active !== undefined) {
-      sql += ' AND p.is_active = ?'
-      params.push(filters.is_active ? 1 : 0)
+      query = query.eq('is_active', filters.is_active ? 1 : 0)
     }
 
     if (filters.category_id !== undefined) {
-      sql += ' AND p.category_id = ?'
-      params.push(filters.category_id)
+      query = query.eq('category_id', filters.category_id)
     }
 
     if (filters.min_price !== undefined) {
-      sql += ' AND p.price >= ?'
-      params.push(filters.min_price)
+      query = query.gte('price', filters.min_price)
     }
 
     if (filters.max_price !== undefined) {
-      sql += ' AND p.price <= ?'
-      params.push(filters.max_price)
+      query = query.lte('price', filters.max_price)
     }
 
     if (filters.is_featured !== undefined) {
-      sql += ' AND p.is_featured = ?'
-      params.push(filters.is_featured ? 1 : 0)
+      query = query.eq('is_featured', filters.is_featured ? 1 : 0)
     }
 
     if (filters.search) {
-      sql += ' AND (p.name LIKE ? OR p.description LIKE ? OR p.sku LIKE ?)'
-      const searchTerm = `%${filters.search}%`
-      params.push(searchTerm, searchTerm, searchTerm)
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`)
     }
 
+    // Get total count first (before pagination)
+    const countQuery = query
+    const { count: total } = await countQuery.select('*', { count: 'exact', head: true })
+
     // Add sorting
-    const sortColumn = filters.sort_by === 'name' ? 'p.name' :
-                      filters.sort_by === 'price' ? 'p.price' :
-                      filters.sort_by === 'stock' ? 'p.stock_quantity' :
-                      'p.created_at'
-    sql += ` ORDER BY ${sortColumn} ${filters.sort_order?.toUpperCase()}`
+    const sortColumn = filters.sort_by === 'name' ? 'name' :
+      filters.sort_by === 'price' ? 'price' :
+        filters.sort_by === 'stock' ? 'stock_quantity' :
+          'created_at'
+    const ascending = filters.sort_order === 'asc'
+    query = query.order(sortColumn, { ascending })
 
     // Add pagination
     const offset = (filters.page! - 1) * filters.limit!
-    sql += ' LIMIT ? OFFSET ?'
-    params.push(filters.limit, offset)
+    query = query.range(offset, offset + filters.limit! - 1)
 
-    const products = runQuery<Product>(sql, params)
+    const { data: products, error } = await query
 
-    // Get total count
-    let countSql = `
-      SELECT COUNT(*) as total
-      FROM products p
-      WHERE 1=1
-    `
-    const countParams: any[] = []
-
-    if (filters.is_active !== undefined) {
-      countSql += ' AND p.is_active = ?'
-      countParams.push(filters.is_active ? 1 : 0)
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
     }
-
-    if (filters.category_id !== undefined) {
-      countSql += ' AND p.category_id = ?'
-      countParams.push(filters.category_id)
-    }
-
-    if (filters.min_price !== undefined) {
-      countSql += ' AND p.price >= ?'
-      countParams.push(filters.min_price)
-    }
-
-    if (filters.max_price !== undefined) {
-      countSql += ' AND p.price <= ?'
-      countParams.push(filters.max_price)
-    }
-
-    if (filters.is_featured !== undefined) {
-      countSql += ' AND p.is_featured = ?'
-      countParams.push(filters.is_featured ? 1 : 0)
-    }
-
-    if (filters.search) {
-      countSql += ' AND (p.name LIKE ? OR p.description LIKE ? OR p.sku LIKE ?)'
-      const searchTerm = `%${filters.search}%`
-      countParams.push(searchTerm, searchTerm, searchTerm)
-    }
-
-    const countResult = runQuery<{ total: number }>(countSql, countParams)
-    const total = countResult[0]?.total || 0
 
     // Get images for each product
-    const productsWithImages = products.map(product => {
-      const images = runQuery<any>(
-        'SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order',
-        [product.id]
-      )
+    const productsWithImages = await Promise.all((products || []).map(async (product: any) => {
+      const { data: images } = await db
+        .from('product_images')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('display_order')
+
+      // Get primary image
+      const primaryImage = images?.find((img: any) => img.is_primary === 1)?.image_url || null
+
       return {
         ...product,
-        images
+        category_name: product.category?.name || null,
+        image_count: images?.length || 0,
+        primary_image: primaryImage,
+        images: images || []
       }
+    }))
+
+    // Remove nested category object
+    const formattedProducts = productsWithImages.map((p: any) => {
+      const { category, ...rest } = p
+      return rest
     })
 
     return NextResponse.json(
       apiResponse({
-        products: productsWithImages,
+        products: formattedProducts,
         pagination: {
           page: filters.page,
           limit: filters.limit,
-          total,
-          totalPages: Math.ceil(total / filters.limit!)
+          total: total || 0,
+          totalPages: Math.ceil((total || 0) / filters.limit!)
         }
       })
     )
@@ -159,7 +130,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const db = getDb()
 
     // Validate required fields
     if (!body.name || !body.price || !body.category_id) {
@@ -173,10 +143,14 @@ export async function POST(request: NextRequest) {
     const slug = body.slug || slugify(body.name)
     const sku = body.sku || generateSKU(body.name)
 
+    const db = getDb()
+
     // Check if slug or SKU already exists
-    const existing = db.prepare(
-      'SELECT id FROM products WHERE slug = ? OR sku = ?'
-    ).get(slug, sku)
+    const { data: existing } = await db
+      .from('products')
+      .select('id')
+      .or(`slug.eq.${slug},sku.eq.${sku}`)
+      .single()
 
     if (existing) {
       return NextResponse.json(
@@ -186,62 +160,69 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert product
-    const sql = `
-      INSERT INTO products (
-        name, slug, description, long_description, sku, category_id,
-        price, compare_at_price, cost_price, stock_quantity,
-        low_stock_threshold, is_featured, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `
-
-    const stmt = db.prepare(sql)
-    const result = stmt.run(
-      body.name,
-      slug,
-      body.description || null,
-      body.long_description || null,
-      sku,
-      body.category_id,
-      body.price,
-      body.compare_at_price || null,
-      body.cost_price || null,
-      body.stock_quantity || 0,
-      body.low_stock_threshold || 5,
-      body.is_featured ? 1 : 0,
-      body.is_active !== false ? 1 : 0
-    )
-
-    const productId = result.lastInsertRowid
-
-    // Add images if provided
-    if (body.images && Array.isArray(body.images)) {
-      const insertImage = db.prepare(`
-        INSERT INTO product_images (
-          product_id, image_url, alt_text, display_order, is_primary
-        ) VALUES (?, ?, ?, ?, ?)
-      `)
-
-      body.images.forEach((image: any, index: number) => {
-        insertImage.run(
-          productId,
-          image.image_url,
-          image.alt_text || body.name,
-          image.display_order || index,
-          index === 0 ? 1 : 0
-        )
+    const { data: newProduct, error: insertError } = await db
+      .from('products')
+      .insert({
+        name: body.name,
+        slug: slug,
+        description: body.description || null,
+        long_description: body.long_description || null,
+        sku: sku,
+        category_id: body.category_id,
+        price: body.price,
+        compare_at_price: body.compare_at_price || null,
+        cost_price: body.cost_price || null,
+        stock_quantity: body.stock_quantity || 0,
+        low_stock_threshold: body.low_stock_threshold || 5,
+        is_featured: body.is_featured ? 1 : 0,
+        is_active: body.is_active !== false ? 1 : 0
       })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      throw insertError
     }
 
-    // Fetch the created product
-    const product = db.prepare(`
-      SELECT p.*, c.name as category_name
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ?
-    `).get(productId)
+    // Add images if provided
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      const imageInserts = body.images.map((image: any, index: number) => ({
+        product_id: newProduct.id,
+        image_url: image.image_url,
+        alt_text: image.alt_text || body.name,
+        display_order: image.display_order || index,
+        is_primary: index === 0 ? 1 : 0
+      }))
+
+      const { error: imagesError } = await db
+        .from('product_images')
+        .insert(imageInserts)
+
+      if (imagesError) {
+        console.error('Images insert error:', imagesError)
+        // Don't throw - product is already created
+      }
+    }
+
+    // Fetch the created product with category name
+    const { data: product } = await db
+      .from('products')
+      .select(`
+        *,
+        category:categories(name)
+      `)
+      .eq('id', newProduct.id)
+      .single()
+
+    const formattedProduct = {
+      ...product,
+      category_name: product?.category?.name || null
+    }
+    delete formattedProduct.category
 
     return NextResponse.json(
-      apiResponse(product),
+      apiResponse(formattedProduct),
       { status: 201 }
     )
   } catch (error) {

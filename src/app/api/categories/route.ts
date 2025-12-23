@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb, runQuery, runInsert } from '@/lib/db'
+import { runQuery, runInsert, runGet, getDb } from '@/lib/db'
 import { Category } from '@/types/category'
 import { apiResponse, apiError, slugify, buildCategoryTree } from '@/lib/utils'
 
@@ -11,41 +11,72 @@ export async function GET(request: NextRequest) {
     const parent_id = searchParams.get('parent_id')
     const is_active = searchParams.get('is_active')
 
-    let sql = `
-      SELECT
-        c.*,
-        p.name as parent_name,
-        (SELECT COUNT(*) FROM products WHERE category_id = c.id) as product_count
-      FROM categories c
-      LEFT JOIN categories p ON c.parent_id = p.id
-      WHERE 1=1
-    `
-    const params: any[] = []
+    const db = getDb()
 
+    // Build query
+    let query = db
+      .from('categories')
+      .select(`
+        *,
+        parent:categories!parent_id(name)
+      `)
+
+    // Apply filters
     if (parent_id !== null) {
-      sql += ' AND c.parent_id = ?'
-      params.push(parent_id === 'null' ? null : parseInt(parent_id))
+      if (parent_id === 'null') {
+        query = query.is('parent_id', null)
+      } else {
+        query = query.eq('parent_id', parseInt(parent_id))
+      }
     }
 
     if (is_active !== null) {
-      sql += ' AND c.is_active = ?'
-      params.push(is_active === 'true' ? 1 : 0)
+      query = query.eq('is_active', is_active === 'true')
     }
 
-    sql += ' ORDER BY c.display_order, c.name'
+    // Order by
+    query = query.order('display_order').order('name')
 
-    const categories = runQuery<Category>(sql, params)
+    const { data: categories, error } = await query
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    // Get product counts for each category
+    const categoriesWithCounts = await Promise.all(
+      (categories || []).map(async (category: any) => {
+        const { count } = await db
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('category_id', category.id)
+
+        return {
+          ...category,
+          parent_name: category.parent?.name || null,
+          product_count: count || 0
+        }
+      })
+    )
+
+    // Remove the nested parent object
+    const formattedCategories = categoriesWithCounts.map((cat: any) => {
+      const { parent, ...rest } = cat
+      return rest
+    })
 
     if (tree) {
-      const categoryTree = buildCategoryTree(categories)
+      const categoryTree = buildCategoryTree(formattedCategories)
       return NextResponse.json(apiResponse(categoryTree))
     }
 
-    return NextResponse.json(apiResponse(categories))
+    return NextResponse.json(apiResponse(formattedCategories))
   } catch (error) {
     console.error('Error fetching categories:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      apiError('Failed to fetch categories'),
+      apiError(`Failed to fetch categories: ${errorMessage}`),
       { status: 500 }
     )
   }
@@ -55,7 +86,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const db = getDb()
 
     // Validate required fields
     if (!body.name) {
@@ -68,10 +98,15 @@ export async function POST(request: NextRequest) {
     // Generate slug if not provided
     const slug = body.slug || slugify(body.name)
 
+    // Get Supabase client
+    const db = getDb()
+
     // Check if slug already exists
-    const existing = db.prepare(
-      'SELECT id FROM categories WHERE slug = ?'
-    ).get(slug)
+    const { data: existing } = await db
+      .from('categories')
+      .select('id')
+      .eq('slug', slug)
+      .single()
 
     if (existing) {
       return NextResponse.json(
@@ -81,36 +116,49 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert category
-    const sql = `
-      INSERT INTO categories (
-        name, slug, description, parent_id, image_url,
-        display_order, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `
+    const { data: newCategory, error: insertError } = await db
+      .from('categories')
+      .insert({
+        name: body.name,
+        slug: slug,
+        description: body.description || null,
+        parent_id: body.parent_id || null,
+        image_url: body.image_url || null,
+        display_order: body.display_order || 0,
+        is_active: body.is_active !== false ? 1 : 0
+      })
+      .select()
+      .single()
 
-    const stmt = db.prepare(sql)
-    const result = stmt.run(
-      body.name,
-      slug,
-      body.description || null,
-      body.parent_id || null,
-      body.image_url || null,
-      body.display_order || 0,
-      body.is_active !== false ? 1 : 0
-    )
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      throw insertError
+    }
 
-    const categoryId = result.lastInsertRowid
+    // Fetch the created category with parent name
+    const { data: category, error: fetchError } = await db
+      .from('categories')
+      .select(`
+        *,
+        parent:categories!parent_id(name)
+      `)
+      .eq('id', newCategory.id)
+      .single()
 
-    // Fetch the created category
-    const category = db.prepare(`
-      SELECT c.*, p.name as parent_name
-      FROM categories c
-      LEFT JOIN categories p ON c.parent_id = p.id
-      WHERE c.id = ?
-    `).get(categoryId)
+    if (fetchError) {
+      console.error('Fetch error:', fetchError)
+      throw fetchError
+    }
+
+    // Format the response to match expected structure
+    const formattedCategory = {
+      ...category,
+      parent_name: category.parent?.name || null
+    }
+    delete formattedCategory.parent
 
     return NextResponse.json(
-      apiResponse(category),
+      apiResponse(formattedCategory),
       { status: 201 }
     )
   } catch (error) {

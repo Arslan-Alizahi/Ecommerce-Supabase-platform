@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runUpdate } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 
 /**
@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
 
     console.log('Stripe webhook received:', type)
 
-    const db = getDb()
-
     // Handle different webhook events
     switch (type) {
       case 'checkout.session.completed':
@@ -25,14 +23,14 @@ export async function POST(request: NextRequest) {
 
         if (sessionOrderId && session.payment_status === 'paid') {
           // Update order status
-          db.prepare(`
+          await runUpdate(`
             UPDATE orders
             SET payment_status = 'paid',
                 payment_method = 'stripe',
                 stripe_session_id = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(session.id, sessionOrderId)
+          `, [session.id, sessionOrderId])
 
           console.log(`✓ Order ${sessionOrderId} marked as paid via checkout.session.completed webhook`)
           console.log(`✓ Revenue transaction created by database trigger`)
@@ -46,14 +44,14 @@ export async function POST(request: NextRequest) {
 
         if (orderId) {
           // Update order status
-          db.prepare(`
+          await runUpdate(`
             UPDATE orders
             SET payment_status = 'paid',
                 payment_method = 'stripe',
                 stripe_payment_intent_id = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(paymentIntent.id, orderId)
+          `, [paymentIntent.id, orderId])
 
           console.log(`✓ Order ${orderId} marked as paid via payment_intent.succeeded webhook`)
           console.log(`✓ Revenue transaction created by database trigger`)
@@ -66,12 +64,12 @@ export async function POST(request: NextRequest) {
         const failedOrderId = failedPayment.metadata?.order_id
 
         if (failedOrderId) {
-          db.prepare(`
+          await runUpdate(`
             UPDATE orders 
             SET payment_status = 'failed',
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(failedOrderId)
+          `, [failedOrderId])
 
           console.log(`Order ${failedOrderId} marked as failed via webhook`)
         }

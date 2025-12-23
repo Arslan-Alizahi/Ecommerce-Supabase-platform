@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet, runUpdate } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 import {
   isStripeConfigured,
@@ -29,10 +29,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const db = getDb()
-
     // Fetch order details
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return NextResponse.json(
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
     console.log('✓ Stripe payment link created:', stripePaymentLink.url)
 
     // Step 4: Save Stripe details to database
-    db.prepare(`
+    await runUpdate(`
       UPDATE orders
       SET stripe_product_id = ?,
           stripe_price_id = ?,
@@ -101,13 +99,13 @@ export async function POST(request: NextRequest) {
           stripe_payment_link_url = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(
+    `, [
       stripeProduct.id,
       stripePrice.id,
       stripePaymentLink.id,
       stripePaymentLink.url,
       orderId
-    )
+    ])
 
     console.log('✓ Stripe details saved to database')
 

@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery, runGet, runInsert, runUpdate } from '@/lib/db'
 
 // GET all settings or specific setting by key
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb()
     const searchParams = request.nextUrl.searchParams
     const key = searchParams.get('key')
 
     if (key) {
       // Get specific setting
-      const setting = db
-        .prepare('SELECT * FROM store_settings WHERE setting_key = ?')
-        .get(key) as any
+      const setting = await runGet('SELECT * FROM store_settings WHERE setting_key = ?', [key]) as any
 
       if (!setting) {
         return NextResponse.json(
@@ -28,9 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all settings
-    const settings = db
-      .prepare('SELECT * FROM store_settings ORDER BY setting_key')
-      .all() as any[]
+    const settings = await runQuery<any>('SELECT * FROM store_settings ORDER BY setting_key')
 
     // Convert to key-value object for easier access
     const settingsMap = settings.reduce((acc, setting) => {
@@ -77,7 +72,6 @@ export async function GET(request: NextRequest) {
 // PUT to update a setting
 export async function PUT(request: NextRequest) {
   try {
-    const db = getDb()
     const body = await request.json()
     const { key, value } = body
 
@@ -96,9 +90,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if setting exists
-    const existing = db
-      .prepare('SELECT * FROM store_settings WHERE setting_key = ?')
-      .get(key) as any
+    const existing = await runGet('SELECT * FROM store_settings WHERE setting_key = ?', [key])
 
     if (!existing) {
       return NextResponse.json(
@@ -110,13 +102,10 @@ export async function PUT(request: NextRequest) {
     // Update the setting
     const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
 
-    db.prepare('UPDATE store_settings SET setting_value = ? WHERE setting_key = ?')
-      .run(stringValue, key)
+    await runUpdate('UPDATE store_settings SET setting_value = ? WHERE setting_key = ?', [stringValue, key])
 
     // Get updated setting
-    const updated = db
-      .prepare('SELECT * FROM store_settings WHERE setting_key = ?')
-      .get(key) as any
+    const updated = await runGet('SELECT * FROM store_settings WHERE setting_key = ?', [key])
 
     return NextResponse.json({
       success: true,
@@ -135,7 +124,6 @@ export async function PUT(request: NextRequest) {
 // POST to create a new setting (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb()
     const body = await request.json()
     const { key, value, type = 'string', description = '' } = body
 
@@ -147,9 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if setting already exists
-    const existing = db
-      .prepare('SELECT * FROM store_settings WHERE setting_key = ?')
-      .get(key)
+    const existing = await runGet('SELECT * FROM store_settings WHERE setting_key = ?', [key])
 
     if (existing) {
       return NextResponse.json(
@@ -161,15 +147,12 @@ export async function POST(request: NextRequest) {
     // Create the setting
     const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
 
-    const result = db
-      .prepare(
-        'INSERT INTO store_settings (setting_key, setting_value, setting_type, description) VALUES (?, ?, ?, ?)'
-      )
-      .run(key, stringValue, type, description)
+    const settingId = await runInsert(
+      'INSERT INTO store_settings (setting_key, setting_value, setting_type, description) VALUES (?, ?, ?, ?)',
+      [key, stringValue, type, description]
+    )
 
-    const newSetting = db
-      .prepare('SELECT * FROM store_settings WHERE id = ?')
-      .get(result.lastInsertRowid) as any
+    const newSetting = await runGet('SELECT * FROM store_settings WHERE id = ?', [settingId]) as any
 
     return NextResponse.json({
       success: true,

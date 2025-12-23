@@ -1,190 +1,180 @@
-import Database from 'better-sqlite3'
-import { existsSync, mkdirSync } from 'fs'
-import { dirname } from 'path'
-import { createTables, createTriggers } from './schema'
-import { seedDatabase } from './seed'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { Pool, PoolClient } from 'pg'
 
-const DATABASE_PATH = process.env.DATABASE_PATH || './data/ecommerce.db'
+let supabase: SupabaseClient | null = null
+let pool: Pool | null = null
 
-let db: Database.Database | null = null
+// Flag to switch between PostgreSQL and Supabase client
+const USE_POSTGRES = false // Set to false to use Supabase REST API
 
-export const getDb = (): Database.Database => {
-  if (!db) {
-    // Ensure data directory exists
-    const dir = dirname(DATABASE_PATH)
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true })
-      console.log(`Created directory: ${dir}`)
+export const getDb = (): SupabaseClient => {
+  if (USE_POSTGRES) {
+    if (!pool) {
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      })
     }
+    return pool as any
+  } else {
+    if (!supabase) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    // Check if database file exists
-    const isNewDatabase = !existsSync(DATABASE_PATH)
-
-    // Create or open database
-    db = new Database(DATABASE_PATH)
-    console.log(`Database ${isNewDatabase ? 'created' : 'opened'} at: ${DATABASE_PATH}`)
-
-    // Enable foreign keys
-    db.pragma('foreign_keys = ON')
-
-    // Enable WAL mode for better concurrency
-    db.pragma('journal_mode = WAL')
-
-    // Create tables if new database
-    if (isNewDatabase) {
-      console.log('Initializing new database...')
-
-      // Create all tables
-      db.exec(createTables)
-      console.log('Tables created successfully')
-
-      // Create triggers
-      db.exec(createTriggers)
-      console.log('Triggers created successfully')
-
-      // Seed initial data
-      // seedDatabase(db) // Commented out - start with empty database
-    } else {
-      // Check if tables exist
-      const tableCheck = db.prepare(`
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='products'
-      `).get()
-
-      if (!tableCheck) {
-        console.log('Tables not found, creating...')
-        db.exec(createTables)
-        db.exec(createTriggers)
-        // seedDatabase(db) // Commented out - start with empty database
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase environment variables')
       }
 
-      // Check if revenue_transactions table exists (migration)
-      const revenueTableCheck = db.prepare(`
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='revenue_transactions'
-      `).get()
-
-      if (!revenueTableCheck) {
-        console.log('Revenue table not found, running migration...')
-        try {
-          const { migrateRevenue } = require('./migrate-revenue')
-          migrateRevenue()
-        } catch (error) {
-          console.error('Failed to run revenue migration:', error)
+      supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
         }
-      }
-
-      // Check if store_settings table exists (migration)
-      const settingsTableCheck = db.prepare(`
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='store_settings'
-      `).get()
-
-      if (!settingsTableCheck) {
-        console.log('Store settings table not found, creating...')
-        db.exec(`
-          CREATE TABLE IF NOT EXISTS store_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            setting_key TEXT UNIQUE NOT NULL,
-            setting_value TEXT NOT NULL,
-            setting_type TEXT DEFAULT 'string',
-            description TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE INDEX IF NOT EXISTS idx_store_settings_key ON store_settings(setting_key);
-        `)
-        console.log('Store settings table created')
-      }
-
-      // Check if store_settings has data, if not seed defaults
-      const settingsCount = db.prepare('SELECT COUNT(*) as count FROM store_settings').get() as { count: number }
-      const storeSettings = [
-        { key: 'tax_rate', value: '18', type: 'number', description: 'Tax rate percentage applied to orders' },
-        { key: 'currency_symbol', value: 'Rs. ', type: 'string', description: 'Currency symbol displayed in prices' },
-        { key: 'store_name', value: 'ZinyasRang', type: 'string', description: 'Store name' },
-        { key: 'low_stock_threshold', value: '5', type: 'number', description: 'Low stock warning threshold' },
-        { key: 'free_shipping_threshold', value: '0', type: 'number', description: 'Free shipping minimum amount' },
-        { key: 'shipping_cost', value: '200', type: 'number', description: 'Shipping cost when below free shipping threshold' },
-      ]
-
-      if (settingsCount.count === 0) {
-        console.log('Seeding default store settings...')
-        const insertSetting = db.prepare(`
-          INSERT INTO store_settings (setting_key, setting_value, setting_type, description)
-          VALUES (?, ?, ?, ?)
-        `)
-        storeSettings.forEach((s) => {
-          insertSetting.run(s.key, s.value, s.type, s.description)
-        })
-        console.log('Default store settings seeded')
-      } else {
-        // Check for any missing settings and add them
-        const insertIfMissing = db.prepare(`
-          INSERT OR IGNORE INTO store_settings (setting_key, setting_value, setting_type, description)
-          VALUES (?, ?, ?, ?)
-        `)
-        storeSettings.forEach((s) => {
-          insertIfMissing.run(s.key, s.value, s.type, s.description)
-        })
-      }
+      })
     }
-  }
-
-  return db
-}
-
-// Helper functions for common database operations
-export const runQuery = <T>(sql: string, params: any[] = []): T[] => {
-  const database = getDb()
-  const stmt = database.prepare(sql)
-  return stmt.all(...params) as T[]
-}
-
-export const runGet = <T>(sql: string, params: any[] = []): T | undefined => {
-  const database = getDb()
-  const stmt = database.prepare(sql)
-  return stmt.get(...params) as T | undefined
-}
-
-export const runInsert = (sql: string, params: any[] = []): number => {
-  const database = getDb()
-  const stmt = database.prepare(sql)
-  const result = stmt.run(...params)
-  return result.lastInsertRowid as number
-}
-
-export const runUpdate = (sql: string, params: any[] = []): number => {
-  const database = getDb()
-  const stmt = database.prepare(sql)
-  const result = stmt.run(...params)
-  return result.changes
-}
-
-export const runDelete = (sql: string, params: any[] = []): number => {
-  const database = getDb()
-  const stmt = database.prepare(sql)
-  const result = stmt.run(...params)
-  return result.changes
-}
-
-// Transaction helper
-export const runTransaction = <T>(fn: (db: Database.Database) => T): T => {
-  const database = getDb()
-  return database.transaction(fn)(database)
-}
-
-// Close database connection (for cleanup)
-export const closeDb = () => {
-  if (db) {
-    db.close()
-    db = null
-    console.log('Database connection closed')
+    return supabase
   }
 }
 
-// Initialize database on module load
-if (typeof window === 'undefined') {
-  // Only initialize on server-side
-  getDb()
+// Get Supabase client (for direct use in API routes)
+export const getSupabase = (): SupabaseClient => {
+  return getDb() as SupabaseClient
+}
+
+// Execute raw SQL query (Legacy helper - partially supported via Supabase .rpc or .from)
+// NOTE: For Supabase REST, this is limited. Better to use getDb().from() directly.
+export const runQuery = async <T>(sql: string, params: any[] = [], client?: PoolClient): Promise<T[]> => {
+  if (USE_POSTGRES) {
+    const db = client || (getDb() as any as Pool)
+    let paramIndex = 1
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`)
+    const result = await db.query(pgSql, params)
+    return result.rows
+  } else {
+    // Attempt to map simple SELECT queries to Supabase for compatibility during migration
+    const selectMatch = sql.match(/SELECT \* FROM (\w+)/i)
+    if (selectMatch) {
+      const table = selectMatch[1]
+      let query = (getDb() as SupabaseClient).from(table).select('*')
+
+      // Simple WHERE clause mapping for 'WHERE key = ?'
+      const whereMatch = sql.match(/WHERE (\w+) = \?/i)
+      if (whereMatch && params.length > 0) {
+        query = query.eq(whereMatch[1], params[0])
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return data as T[]
+    }
+
+    throw new Error(`Raw SQL query not supported with Supabase REST: ${sql}. Use Supabase query builder instead.`)
+  }
+}
+
+export const runGet = async <T>(sql: string, params: any[] = [], client?: PoolClient): Promise<T | undefined> => {
+  const rows = await runQuery<T>(sql, params, client)
+  return rows[0]
+}
+
+export const runInsert = async (sql: string, params: any[] = [], client?: PoolClient): Promise<number> => {
+  if (USE_POSTGRES) {
+    let finalSql = sql
+    if (!finalSql.toLowerCase().includes('returning')) {
+      finalSql += ' RETURNING id'
+    }
+    const rows = await runQuery<{ id: number }>(finalSql, params, client)
+    return rows[0]?.id || 0
+  } else {
+    // Mapping simple INSERT INTO table (...) VALUES (?, ...)
+    const insertMatch = sql.match(/INSERT INTO (\w+)\s*\((.*?)\)/i)
+    if (insertMatch) {
+      const table = insertMatch[1]
+      const columns = insertMatch[2].split(',').map(c => c.trim())
+      const data: any = {}
+      columns.forEach((col, i) => {
+        data[col] = params[i]
+      })
+
+      const { data: inserted, error } = await (getDb() as SupabaseClient)
+        .from(table)
+        .insert(data)
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return (inserted as any)?.id || 0
+    }
+    throw new Error('Raw SQL INSERT not supported with Supabase REST. Use Supabase query builder instead.')
+  }
+}
+
+export const runUpdate = async (sql: string, params: any[] = [], client?: PoolClient): Promise<number> => {
+  if (USE_POSTGRES) {
+    const db = client || (getDb() as any as Pool)
+    let paramIndex = 1
+    const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`)
+    const result = await db.query(pgSql, params)
+    return result.rowCount || 0
+  } else {
+    // Simple UPDATE mapping: UPDATE table SET col = ? WHERE key = ?
+    const updateMatch = sql.match(/UPDATE (\w+) SET (.*?) WHERE (.*?) = \?/i)
+    if (updateMatch) {
+      const table = updateMatch[1]
+      const setClause = updateMatch[2]
+      const whereKey = updateMatch[3]
+
+      const setCols = setClause.split(',').map(s => s.split('=')[0].trim())
+      const data: any = {}
+      setCols.forEach((col, i) => {
+        data[col] = params[i]
+      })
+
+      const whereVal = params[params.length - 1]
+
+      const { error, count } = await (getDb() as SupabaseClient)
+        .from(table)
+        .update(data)
+        .eq(whereKey, whereVal)
+
+      if (error) throw error
+      return count || 1 // count might be null depending on config
+    }
+    throw new Error('Raw SQL UPDATE not supported with Supabase REST. Use Supabase query builder instead.')
+  }
+}
+
+export const runDelete = runUpdate
+
+export const runTransaction = async <T>(fn: (client: PoolClient | SupabaseClient) => Promise<T>): Promise<T> => {
+  if (USE_POSTGRES) {
+    const db = getDb() as any as Pool
+    const client = await db.connect()
+    try {
+      await client.query('BEGIN')
+      const result = await fn(client)
+      await client.query('COMMIT')
+      return result
+    } catch (e) {
+      await client.query('ROLLBACK')
+      console.error('Transaction Failed:', e)
+      throw e
+    } finally {
+      client.release()
+    }
+  } else {
+    // Supabase doesn't support traditional transactions via REST API
+    const db = getDb() as SupabaseClient
+    return await fn(db)
+  }
+}
+
+export const closeDb = async () => {
+  if (USE_POSTGRES && pool) {
+    await pool.end()
+    pool = null
+  } else {
+    supabase = null
+  }
+  console.log('Database connection closed')
 }

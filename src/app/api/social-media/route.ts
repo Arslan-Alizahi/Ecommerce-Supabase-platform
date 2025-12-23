@@ -6,32 +6,31 @@ import type { CreateSocialMediaLinkInput } from '@/types/social-media'
 // GET /api/social-media - Get all social media links
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb()
     const { searchParams } = new URL(request.url)
     const activeOnly = searchParams.get('active_only') === 'true'
 
-    let query = `
-      SELECT *
-      FROM social_media_links
-    `
+    const db = getDb()
+    let query = db
+      .from('social_media_links')
+      .select('*')
 
-    const conditions = []
     if (activeOnly) {
-      conditions.push('is_active = 1')
+      query = query.eq('is_active', 1)
     }
 
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ')
+    query = query.order('display_order', { ascending: true })
+
+    const { data: links, error } = await query
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
     }
-
-    query += ' ORDER BY display_order ASC'
-
-    const links = db.prepare(query).all()
 
     return NextResponse.json(
       apiResponse({
-        links,
-        total: links.length,
+        links: links || [],
+        total: (links || []).length,
       })
     )
   } catch (error) {
@@ -56,25 +55,22 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb()
+    const { data: newLink, error } = await db
+      .from('social_media_links')
+      .insert({
+        platform: body.platform,
+        url: body.url,
+        icon: body.icon,
+        display_order: body.display_order ?? 0,
+        is_active: body.is_active ?? 1
+      })
+      .select()
+      .single()
 
-    const result = db
-      .prepare(
-        `
-      INSERT INTO social_media_links (platform, url, icon, display_order, is_active)
-      VALUES (?, ?, ?, ?, ?)
-    `
-      )
-      .run(
-        body.platform,
-        body.url,
-        body.icon,
-        body.display_order ?? 0,
-        body.is_active ?? 1
-      )
-
-    const newLink = db
-      .prepare('SELECT * FROM social_media_links WHERE id = ?')
-      .get(result.lastInsertRowid)
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     return NextResponse.json(apiResponse(newLink, true, 'Social media link created successfully'), {
       status: 201,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 
 // GET /api/stripe/check-payment?orderId=123 - Check payment status for order
@@ -15,10 +15,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const db = getDb()
-
     // Fetch order details
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return NextResponse.json(

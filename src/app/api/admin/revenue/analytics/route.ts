@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery, runGet } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,62 +9,62 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const type = searchParams.get('type') // 'order' or 'all'
 
-    const db = getDb()
-
     // Build date filter
     let dateFilter = ''
     if (startDate && endDate) {
-      dateFilter = `WHERE DATE(transaction_date) BETWEEN DATE('${startDate}') AND DATE('${endDate}')`
+      dateFilter = `WHERE transaction_date::date BETWEEN '${startDate}' AND '${endDate}'`
     } else {
       // Default date ranges based on period
       switch (period) {
         case 'day':
-          dateFilter = `WHERE DATE(transaction_date) >= DATE('now', '-30 days')`
+          dateFilter = `WHERE transaction_date::date >= CURRENT_DATE - INTERVAL '30 days'`
           break
         case 'week':
-          dateFilter = `WHERE DATE(transaction_date) >= DATE('now', '-12 weeks')`
+          dateFilter = `WHERE transaction_date::date >= CURRENT_DATE - INTERVAL '12 weeks'`
           break
         case 'month':
-          dateFilter = `WHERE DATE(transaction_date) >= DATE('now', '-12 months')`
+          dateFilter = `WHERE transaction_date::date >= CURRENT_DATE - INTERVAL '12 months'`
           break
         case 'year':
-          dateFilter = `WHERE DATE(transaction_date) >= DATE('now', '-5 years')`
+          dateFilter = `WHERE transaction_date::date >= CURRENT_DATE - INTERVAL '5 years'`
           break
         default:
-          dateFilter = `WHERE DATE(transaction_date) >= DATE('now', '-12 months')`
+          dateFilter = `WHERE transaction_date::date >= CURRENT_DATE - INTERVAL '12 months'`
       }
     }
 
     // Add type filter if specified
     if (type && type !== 'all') {
-      dateFilter += dateFilter.includes('WHERE') ? ' AND' : ' WHERE'
-      dateFilter += ` transaction_type = '${type}'`
+      dateFilter += dateFilter.toLowerCase().includes('where') ? ' AND' : ' WHERE'
+      // Use parameter for type to avoid injection, though type is limited by enum in logic usually.
+      // For simplicity here integrating string, but verifying content is safe or use params.
+      // safer to use parameter if we can. 
+      dateFilter += ` transaction_type = '${type.replace(/'/g, "''")}'`
     }
 
     // Get revenue over time based on period
     let groupByFormat = ''
     switch (period) {
       case 'day':
-        groupByFormat = '%Y-%m-%d'
+        groupByFormat = 'YYYY-MM-DD'
         break
       case 'week':
-        groupByFormat = '%Y-W%W'
+        groupByFormat = 'IYYY-"W"IW' // ISO Week
         break
       case 'month':
-        groupByFormat = '%Y-%m'
+        groupByFormat = 'YYYY-MM'
         break
       case 'year':
-        groupByFormat = '%Y'
+        groupByFormat = 'YYYY'
         break
       default:
-        groupByFormat = '%Y-%m'
+        groupByFormat = 'YYYY-MM'
     }
 
-    const revenueOverTime = db
-      .prepare(
-        `
+    const revenueOverTime = await runQuery<any>(
+      `
         SELECT
-          strftime('${groupByFormat}', transaction_date) as period,
+          to_char(transaction_date, '${groupByFormat}') as period,
           COALESCE(SUM(total), 0) as revenue,
           COALESCE(SUM(subtotal), 0) as subtotal,
           COALESCE(SUM(tax), 0) as tax,
@@ -75,15 +75,13 @@ export async function GET(request: NextRequest) {
         GROUP BY period
         ORDER BY period ASC
       `
-      )
-      .all() as any[]
+    )
 
     // Get revenue by source over time
-    const revenueBySource = db
-      .prepare(
-        `
+    const revenueBySource = await runQuery<any>(
+      `
         SELECT
-          strftime('${groupByFormat}', transaction_date) as period,
+          to_char(transaction_date, '${groupByFormat}') as period,
           transaction_type,
           COALESCE(SUM(total), 0) as revenue,
           COUNT(*) as transactions
@@ -92,15 +90,13 @@ export async function GET(request: NextRequest) {
         GROUP BY period, transaction_type
         ORDER BY period ASC, transaction_type
       `
-      )
-      .all() as any[]
+    )
 
     // Get top performing days
-    const topDays = db
-      .prepare(
-        `
+    const topDays = await runQuery<any>(
+      `
         SELECT
-          DATE(transaction_date) as date,
+          transaction_date::date as date,
           COALESCE(SUM(total), 0) as revenue,
           COUNT(*) as transactions
         FROM revenue_transactions
@@ -109,13 +105,11 @@ export async function GET(request: NextRequest) {
         ORDER BY revenue DESC
         LIMIT 10
       `
-      )
-      .all() as any[]
+    )
 
     // Get revenue by payment method over period
-    const paymentMethodTrends = db
-      .prepare(
-        `
+    const paymentMethodTrends = await runQuery<any>(
+      `
         SELECT
           payment_method,
           COALESCE(SUM(total), 0) as revenue,
@@ -125,28 +119,25 @@ export async function GET(request: NextRequest) {
         GROUP BY payment_method
         ORDER BY revenue DESC
       `
-      )
-      .all() as any[]
+    )
 
     // Get daily averages
-    const avgDaily = db
-      .prepare(
-        `
+    const avgDaily = await runGet(
+      `
         SELECT
           AVG(daily_revenue) as avg_revenue,
           AVG(daily_transactions) as avg_transactions
         FROM (
           SELECT
-            DATE(transaction_date) as date,
+            transaction_date::date as date,
             SUM(total) as daily_revenue,
             COUNT(*) as daily_transactions
           FROM revenue_transactions
           ${dateFilter}
           GROUP BY date
-        )
+        ) sub
       `
-      )
-      .get() as any
+    ) as any
 
     return NextResponse.json({
       success: true,
