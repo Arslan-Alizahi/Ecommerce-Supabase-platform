@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb, runQuery } from '@/lib/db'
+import { runQuery, runGet, runUpdate, runDelete } from '@/lib/db'
 import { apiResponse, apiError, slugify } from '@/lib/utils'
 
 // GET /api/products/[id] - Get single product by ID or slug
@@ -8,7 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
     const identifier = id
 
@@ -25,7 +24,7 @@ export async function GET(
       WHERE ${isNumeric ? 'p.id' : 'p.slug'} = ?
     `
 
-    const product = db.prepare(sql).get(isNumeric ? parseInt(identifier) : identifier) as any
+    const product = await runGet(sql, [isNumeric ? parseInt(identifier) : identifier]) as any
 
     if (!product) {
       return NextResponse.json(
@@ -35,13 +34,13 @@ export async function GET(
     }
 
     // Get product images
-    const images = runQuery<any>(
+    const images = await runQuery<any>(
       'SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order',
       [product.id]
     )
 
     // Get related products (same category, different product)
-    const relatedProducts = runQuery<any>(
+    const relatedProducts = await runQuery<any>(
       `SELECT p.*,
         (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
        FROM products p
@@ -74,12 +73,11 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const db = getDb()
     const { id } = await params
     const productId = parseInt(id)
 
     // Check if product exists
-    const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(productId)
+    const existing = await runGet('SELECT id FROM products WHERE id = ?', [productId])
     if (!existing) {
       return NextResponse.json(
         apiError('Product not found'),
@@ -163,39 +161,40 @@ export async function PUT(
     if (updates.length > 0) {
       const sql = `UPDATE products SET ${updates.join(', ')} WHERE id = ?`
       values.push(productId)
-      db.prepare(sql).run(values)
+      await runUpdate(sql, values)
     }
 
     // Update images if provided
     if (body.images && Array.isArray(body.images)) {
       // Delete existing images
-      db.prepare('DELETE FROM product_images WHERE product_id = ?').run(productId)
+      await runUpdate('DELETE FROM product_images WHERE product_id = ?', [productId])
 
       // Insert new images
-      const insertImage = db.prepare(`
+      const sqlImages = `
         INSERT INTO product_images (
           product_id, image_url, alt_text, display_order, is_primary
         ) VALUES (?, ?, ?, ?, ?)
-      `)
+      `
 
-      body.images.forEach((image: any, index: number) => {
-        insertImage.run(
+      for (let index = 0; index < body.images.length; index++) {
+        const image = body.images[index]
+        await runUpdate(sqlImages, [
           productId,
           image.image_url,
           image.alt_text || body.name || 'Product image',
           image.display_order || index,
           index === 0 ? 1 : 0
-        )
-      })
+        ])
+      }
     }
 
     // Fetch updated product
-    const product = db.prepare(`
+    const product = await runGet(`
       SELECT p.*, c.name as category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.id = ?
-    `).get(productId)
+    `, [productId])
 
     return NextResponse.json(apiResponse(product))
   } catch (error) {
@@ -213,12 +212,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
     const productId = parseInt(id)
 
     // Check if product exists
-    const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(productId)
+    const existing = await runGet('SELECT id FROM products WHERE id = ?', [productId])
     if (!existing) {
       return NextResponse.json(
         apiError('Product not found'),
@@ -227,7 +225,7 @@ export async function DELETE(
     }
 
     // Delete product (images will be cascade deleted)
-    db.prepare('DELETE FROM products WHERE id = ?').run(productId)
+    await runDelete('DELETE FROM products WHERE id = ?', [productId])
 
     return NextResponse.json(apiResponse({ message: 'Product deleted successfully' }))
   } catch (error) {

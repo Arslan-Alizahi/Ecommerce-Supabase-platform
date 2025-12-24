@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,8 +7,6 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') // 'order' or 'all'
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
-
-    const db = getDb()
 
     // Build WHERE clause
     const conditions: string[] = []
@@ -20,16 +18,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate && endDate) {
-      conditions.push('DATE(transaction_date) BETWEEN DATE(?) AND DATE(?)')
+      conditions.push('transaction_date::date BETWEEN ?::date AND ?::date')
       params.push(startDate, endDate)
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // Get all transactions
-    const transactions = db
-      .prepare(
-        `
+    const transactions = await runQuery<any>(
+      `
         SELECT
           transaction_type as "Transaction Type",
           reference_number as "Reference Number",
@@ -43,14 +40,17 @@ export async function GET(request: NextRequest) {
           total as "Total",
           payment_method as "Payment Method",
           payment_status as "Payment Status",
-          datetime(transaction_date) as "Transaction Date",
+          CASE 
+            WHEN transaction_date IS NULL THEN ''
+            ELSE to_char(transaction_date, 'YYYY-MM-DD HH24:MI:SS')
+          END as "Transaction Date",
           notes as "Notes"
         FROM revenue_transactions
         ${whereClause}
         ORDER BY transaction_date DESC
-      `
-      )
-      .all(...params) as any[]
+      `,
+      params
+    )
 
     // Convert to CSV
     if (transactions.length === 0) {

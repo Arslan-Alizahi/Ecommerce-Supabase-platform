@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery, runGet } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,30 +12,30 @@ export async function GET(request: NextRequest) {
     const paymentMethod = searchParams.get('paymentMethod')
     const search = searchParams.get('search') // Search by customer name or reference number
 
-    const db = getDb()
     const offset = (page - 1) * limit
 
     // Build WHERE clause
     const conditions: string[] = []
     const params: any[] = []
+    let paramIndex = 1
 
     if (type && type !== 'all') {
-      conditions.push('transaction_type = ?')
+      conditions.push(`transaction_type = ?`)
       params.push(type)
     }
 
     if (startDate && endDate) {
-      conditions.push('DATE(transaction_date) BETWEEN DATE(?) AND DATE(?)')
+      conditions.push(`transaction_date::date BETWEEN ?::date AND ?::date`)
       params.push(startDate, endDate)
     }
 
     if (paymentMethod && paymentMethod !== 'all') {
-      conditions.push('payment_method = ?')
+      conditions.push(`payment_method = ?`)
       params.push(paymentMethod)
     }
 
     if (search) {
-      conditions.push('(customer_name LIKE ? OR reference_number LIKE ?)')
+      conditions.push(`(customer_name LIKE ? OR reference_number LIKE ?)`)
       const searchTerm = `%${search}%`
       params.push(searchTerm, searchTerm)
     }
@@ -43,20 +43,19 @@ export async function GET(request: NextRequest) {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // Get total count
-    const countResult = db
-      .prepare(
-        `
+    const countResult = await runGet(
+      `
         SELECT COUNT(*) as total
         FROM revenue_transactions
         ${whereClause}
-      `
-      )
-      .get(...params) as { total: number }
+      `,
+      params
+    ) as { total: number }
 
     // Get transactions
-    const transactions = db
-      .prepare(
-        `
+    params.push(limit, offset)
+    const transactions = await runQuery<any>(
+      `
         SELECT
           id,
           transaction_type,
@@ -79,11 +78,11 @@ export async function GET(request: NextRequest) {
         ${whereClause}
         ORDER BY transaction_date DESC
         LIMIT ? OFFSET ?
-      `
-      )
-      .all(...params, limit, offset) as any[]
+      `,
+      params
+    )
 
-    const totalPages = Math.ceil(countResult.total / limit)
+    const totalPages = Math.ceil(Number(countResult.total) / limit)
 
     return NextResponse.json({
       success: true,
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest) {
         pagination: {
           page,
           limit,
-          total: countResult.total,
+          total: Number(countResult.total),
           totalPages,
           hasMore: page < totalPages,
         },

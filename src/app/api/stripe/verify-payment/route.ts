@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet, runUpdate } from '@/lib/db'
 import { stripe } from '@/lib/stripe'
 
 /**
@@ -36,10 +36,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url))
     }
 
-    const db = getDb()
-
     // Check current order status
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       console.error('Order not found:', orderId)
@@ -54,14 +52,14 @@ export async function GET(request: NextRequest) {
 
     // Update order status to 'paid' if payment was successful
     if (session.payment_status === 'paid' && order.payment_status !== 'paid') {
-      db.prepare(`
+      await runUpdate(`
         UPDATE orders
         SET payment_status = 'paid',
             payment_method = 'stripe',
             stripe_session_id = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(sessionId, orderId)
+      `, [sessionId, orderId])
 
       console.log('✓ Order marked as paid:', orderId)
       console.log('✓ Revenue transaction will be created by database trigger')
@@ -73,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // Redirect to success page with orderId
     const successUrl = new URL('/order/success', request.url)
-    successUrl.searchParams.set('orderId', orderId)
+    successUrl.searchParams.set('orderId', orderId as string)
 
     return NextResponse.redirect(successUrl)
   } catch (error: any) {

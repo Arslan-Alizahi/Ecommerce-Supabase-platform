@@ -1,6 +1,6 @@
 'use server'
 
-import { getDb } from '@/lib/db'
+import { runGet } from '@/lib/db'
 
 /**
  * Server action to create Stripe payment for an order
@@ -8,10 +8,8 @@ import { getDb } from '@/lib/db'
  */
 export async function createStripePayment(orderId: number) {
   try {
-    const db = getDb()
-
     // Fetch order details
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return {
@@ -29,9 +27,11 @@ export async function createStripePayment(orderId: number) {
     }
 
     // Check if payment link already exists
-    const existingLink = db.prepare(
-      'SELECT stripe_payment_link_url FROM orders WHERE id = ? AND stripe_payment_link_url IS NOT NULL'
-    ).get(orderId) as any
+    // Note: Ensuring stripe_payment_link_url column exists via migration
+    const existingLink = await runGet(
+      'SELECT stripe_payment_link_url FROM orders WHERE id = ? AND stripe_payment_link_url IS NOT NULL',
+      [orderId]
+    ) as any
 
     if (existingLink && existingLink.stripe_payment_link_url) {
       return {
@@ -45,7 +45,7 @@ export async function createStripePayment(orderId: number) {
     // In a real implementation, this is where we would call Stripe MCP tools
     // Since MCP tools are only available in the AI context, we'll need to
     // make an API call to a special endpoint that has MCP access
-    
+
     // For now, return order details and indicate that Stripe integration is pending
     return {
       success: true,
@@ -70,10 +70,8 @@ export async function createStripePayment(orderId: number) {
  */
 export async function verifyStripePayment(orderId: number, paymentIntentId?: string) {
   try {
-    const db = getDb()
-
     // Fetch order
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return {

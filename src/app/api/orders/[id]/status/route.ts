@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet, runUpdate } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 
 // PUT /api/orders/[id]/status - Update order payment status (Admin only)
@@ -36,10 +36,8 @@ export async function PUT(
       )
     }
 
-    const db = getDb()
-
     // Check if order exists
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return NextResponse.json(
@@ -57,10 +55,10 @@ export async function PUT(
       ? [paymentStatus, paymentMethod, orderId]
       : [paymentStatus, orderId]
 
-    db.prepare(updateSql).run(...params_array)
+    await runUpdate(updateSql, params_array)
 
     // Fetch updated order
-    const updatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const updatedOrder = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     return NextResponse.json(
       apiResponse({
@@ -93,10 +91,8 @@ export async function GET(
       )
     }
 
-    const db = getDb()
-
     // Fetch order
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     if (!order) {
       return NextResponse.json(

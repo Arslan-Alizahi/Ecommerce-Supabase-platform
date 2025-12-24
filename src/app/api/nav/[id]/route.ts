@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery, runGet, runUpdate, runDelete } from '@/lib/db'
 
 // GET /api/nav/[id] - Get single navigation item
 export async function GET(
@@ -7,11 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
-    const item = db
-      .prepare('SELECT * FROM nav_items WHERE id = ?')
-      .get(id) as any
+    const item = await runGet('SELECT * FROM nav_items WHERE id = ?', [id]) as any
 
     if (!item) {
       return NextResponse.json(
@@ -40,13 +37,10 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const db = getDb()
+    const { id } = await params
 
     // Check if item exists
-    const { id } = await params
-    const existing = db
-      .prepare('SELECT id FROM nav_items WHERE id = ?')
-      .get(id)
+    const existing = await runGet('SELECT id FROM nav_items WHERE id = ?', [id])
 
     if (!existing) {
       return NextResponse.json(
@@ -70,8 +64,7 @@ export async function PUT(
       WHERE id = ?
     `
 
-    const stmt = db.prepare(sql)
-    stmt.run(
+    await runUpdate(sql, [
       body.label,
       body.href,
       body.parent_id || null,
@@ -81,14 +74,11 @@ export async function PUT(
       body.display_order || 0,
       body.is_active ? 1 : 0,
       body.location || 'header',
-      body.location || 'header',
       body.meta ? JSON.stringify(body.meta) : null,
       id
-    )
+    ])
 
-    const updated = db
-      .prepare('SELECT * FROM nav_items WHERE id = ?')
-      .get(id)
+    const updated = await runGet('SELECT * FROM nav_items WHERE id = ?', [id])
 
     return NextResponse.json({
       success: true,
@@ -110,13 +100,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
+    const { id } = await params
 
     // Check if item exists
-    const { id } = await params
-    const existing = db
-      .prepare('SELECT id FROM nav_items WHERE id = ?')
-      .get(id)
+    const existing = await runGet('SELECT id FROM nav_items WHERE id = ?', [id])
 
     if (!existing) {
       return NextResponse.json(
@@ -125,7 +112,7 @@ export async function DELETE(
       )
     }
 
-    db.prepare('DELETE FROM nav_items WHERE id = ?').run(id)
+    await runDelete('DELETE FROM nav_items WHERE id = ?', [id])
 
     return NextResponse.json({
       success: true,

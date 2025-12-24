@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet, runUpdate, runDelete } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 import type { UpdateSocialMediaLinkInput } from '@/types/social-media'
 
@@ -9,11 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
-    const link = db
-      .prepare('SELECT * FROM social_media_links WHERE id = ?')
-      .get(id) as any
+    const link = await runGet('SELECT * FROM social_media_links WHERE id = ?', [id]) as any
 
     if (!link) {
       return NextResponse.json(apiError('Social media link not found'), {
@@ -37,13 +34,10 @@ export async function PUT(
 ) {
   try {
     const body: UpdateSocialMediaLinkInput = await request.json()
-    const db = getDb()
+    const { id } = await params
 
     // Check if link exists
-    const { id } = await params
-    const existing = db
-      .prepare('SELECT * FROM social_media_links WHERE id = ?')
-      .get(id) as any
+    const existing = await runGet('SELECT * FROM social_media_links WHERE id = ?', [id]) as any
 
     if (!existing) {
       return NextResponse.json(apiError('Social media link not found'), {
@@ -82,13 +76,12 @@ export async function PUT(
 
     values.push(id)
 
-    db.prepare(
-      `UPDATE social_media_links SET ${updates.join(', ')} WHERE id = ?`
-    ).run(...values)
+    await runUpdate(
+      `UPDATE social_media_links SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    )
 
-    const updatedLink = db
-      .prepare('SELECT * FROM social_media_links WHERE id = ?')
-      .get(id) as any
+    const updatedLink = await runGet('SELECT * FROM social_media_links WHERE id = ?', [id]) as any
 
     return NextResponse.json(apiResponse(updatedLink, true, 'Social media link updated successfully'))
   } catch (error) {
@@ -105,13 +98,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
+    const { id } = await params
 
     // Check if link exists
-    const { id } = await params
-    const existing = db
-      .prepare('SELECT * FROM social_media_links WHERE id = ?')
-      .get(id)
+    const existing = await runGet('SELECT * FROM social_media_links WHERE id = ?', [id])
 
     if (!existing) {
       return NextResponse.json(apiError('Social media link not found'), {
@@ -119,7 +109,7 @@ export async function DELETE(
       })
     }
 
-    db.prepare('DELETE FROM social_media_links WHERE id = ?').run(id)
+    await runDelete('DELETE FROM social_media_links WHERE id = ?', [id])
 
     return NextResponse.json(apiResponse(null, true, 'Social media link deleted successfully'))
   } catch (error) {

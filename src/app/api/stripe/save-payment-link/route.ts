@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runUpdate, runGet } from '@/lib/db'
 import { apiResponse, apiError } from '@/lib/utils'
 
 /**
@@ -25,10 +25,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const db = getDb()
-
     // Update order with Stripe details
-    db.prepare(`
+    await runUpdate(`
       UPDATE orders 
       SET stripe_product_id = ?,
           stripe_price_id = ?,
@@ -36,16 +34,16 @@ export async function POST(request: NextRequest) {
           stripe_payment_link_url = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(
+    `, [
       stripeProductId || null,
       stripePriceId || null,
       stripePaymentLinkId || null,
       stripePaymentLinkUrl,
       orderId
-    )
+    ])
 
     // Fetch updated order
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
+    const order = await runGet('SELECT * FROM orders WHERE id = ?', [orderId]) as any
 
     return NextResponse.json(
       apiResponse({

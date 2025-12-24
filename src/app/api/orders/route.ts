@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb, runQuery, runTransaction } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { Order } from '@/types/order'
 import { apiResponse, apiError, generateOrderNumber, calculateTax, calculateTotal } from '@/lib/utils'
 
@@ -8,39 +8,41 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
 
-    let sql = `
-      SELECT * FROM orders
-      WHERE 1=1
-    `
-    const params: any[] = []
+    const db = getDb()
+    let query = db
+      .from('orders')
+      .select('*')
 
     if (searchParams.get('status')) {
-      sql += ' AND status = ?'
-      params.push(searchParams.get('status'))
+      query = query.eq('status', searchParams.get('status')!)
     }
 
     if (searchParams.get('customer_email')) {
-      sql += ' AND customer_email = ?'
-      params.push(searchParams.get('customer_email'))
+      query = query.eq('customer_email', searchParams.get('customer_email')!)
     }
 
-    sql += ' ORDER BY created_at DESC'
+    query = query.order('created_at', { ascending: false })
 
     if (searchParams.get('limit')) {
-      sql += ' LIMIT ?'
-      params.push(parseInt(searchParams.get('limit')!))
+      query = query.limit(parseInt(searchParams.get('limit')!))
     }
 
-    const orders = runQuery<Order>(sql, params)
+    const { data: orders, error } = await query
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     // Get order items for each order
-    const ordersWithItems = orders.map(order => {
-      const items = runQuery<any>(
-        'SELECT * FROM order_items WHERE order_id = ?',
-        [order.id]
-      )
-      return { ...order, items }
-    })
+    const ordersWithItems = await Promise.all((orders || []).map(async (order: any) => {
+      const { data: items } = await db
+        .from('order_items')
+        .select('*')
+        .eq('order_id', order.id)
+
+      return { ...order, items: items || [] }
+    }))
 
     return NextResponse.json(apiResponse(ordersWithItems))
   } catch (error) {
@@ -56,7 +58,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const db = getDb()
 
     // Validate required fields
     if (!body.items || body.items.length === 0) {
@@ -66,87 +67,103 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return runTransaction(db => {
-      // Calculate totals
-      let subtotal = 0
-      for (const item of body.items) {
-        subtotal += item.unit_price * item.quantity
+    const db = getDb()
+
+    // Calculate totals
+    let subtotal = 0
+    for (const item of body.items) {
+      subtotal += item.unit_price * item.quantity
+    }
+
+    const tax = body.tax || calculateTax(subtotal)
+    const shipping = body.shipping_cost || 0
+    const discount = body.discount || 0
+    const total = calculateTotal(subtotal, tax, shipping, discount)
+
+    // Create order
+    const orderNumber = generateOrderNumber()
+
+    const { data: newOrder, error: orderError } = await db
+      .from('orders')
+      .insert({
+        order_number: orderNumber,
+        customer_name: body.customer_name || null,
+        customer_email: body.customer_email || null,
+        customer_phone: body.customer_phone || null,
+        shipping_address: body.shipping_address || null,
+        billing_address: body.billing_address || null,
+        subtotal: subtotal,
+        tax: tax,
+        shipping_cost: shipping,
+        discount: discount,
+        total: total,
+        status: 'pending',
+        payment_method: body.payment_method || 'stripe',
+        payment_status: 'pending',
+        notes: body.notes || null
+      })
+      .select()
+      .single()
+
+    if (orderError) {
+      console.error('Order insert error:', orderError)
+      throw orderError
+    }
+
+    // Add order items and update stock
+    for (const item of body.items) {
+      // Check stock first
+      const { data: product } = await db
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', item.product_id)
+        .single()
+
+      if (!product || product.stock_quantity < item.quantity) {
+        throw new Error(`Insufficient stock for product ${item.product_name}`)
       }
 
-      const tax = body.tax || calculateTax(subtotal)
-      const shipping = body.shipping_cost || 0
-      const discount = body.discount || 0
-      const total = calculateTotal(subtotal, tax, shipping, discount)
+      // Insert order item
+      const { error: itemError } = await db
+        .from('order_items')
+        .insert({
+          order_id: newOrder.id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          product_sku: item.product_sku || null,
+          product_image: item.product_image || null,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          subtotal: item.unit_price * item.quantity
+        })
 
-      // Create order
-      const orderNumber = generateOrderNumber()
-      const orderResult = db.prepare(`
-        INSERT INTO orders (
-          order_number, customer_name, customer_email, customer_phone,
-          shipping_address, billing_address, subtotal, tax, shipping_cost,
-          discount, total, status, payment_method, payment_status, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        orderNumber,
-        body.customer_name || null,
-        body.customer_email || null,
-        body.customer_phone || null,
-        body.shipping_address || null,
-        body.billing_address || null,
-        subtotal,
-        tax,
-        shipping,
-        discount,
-        total,
-        'pending',
-        body.payment_method || 'stripe', // Default to stripe for online orders
-        'pending', // Start with pending, will be updated after successful payment
-        body.notes || null
-      )
-
-      const orderId = orderResult.lastInsertRowid
-
-      // Add order items and update stock
-      const insertItem = db.prepare(`
-        INSERT INTO order_items (
-          order_id, product_id, product_name, product_sku, product_image,
-          quantity, unit_price, subtotal
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-
-      const updateStock = db.prepare(
-        'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?'
-      )
-
-      for (const item of body.items) {
-        // Insert order item
-        insertItem.run(
-          orderId,
-          item.product_id,
-          item.product_name,
-          item.product_sku || null,
-          item.product_image || null,
-          item.quantity,
-          item.unit_price,
-          item.unit_price * item.quantity
-        )
-
-        // Update stock
-        const stockResult = updateStock.run(item.quantity, item.product_id, item.quantity)
-        if (stockResult.changes === 0) {
-          throw new Error(`Insufficient stock for product ${item.product_name}`)
-        }
+      if (itemError) {
+        console.error('Order item insert error:', itemError)
+        throw itemError
       }
 
-      // Fetch created order
-      const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any
-      const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId)
+      // Update stock
+      const { error: stockError } = await db
+        .from('products')
+        .update({ stock_quantity: product.stock_quantity - item.quantity })
+        .eq('id', item.product_id)
 
-      return NextResponse.json(
-        apiResponse({ ...order, items }),
-        { status: 201 }
-      )
-    })
+      if (stockError) {
+        console.error('Stock update error:', stockError)
+        throw stockError
+      }
+    }
+
+    // Fetch created order with items
+    const { data: items } = await db
+      .from('order_items')
+      .select('*')
+      .eq('order_id', newOrder.id)
+
+    return NextResponse.json(
+      apiResponse({ ...newOrder, items: items || [] }),
+      { status: 201 }
+    )
   } catch (error: any) {
     console.error('Error creating order:', error)
     return NextResponse.json(

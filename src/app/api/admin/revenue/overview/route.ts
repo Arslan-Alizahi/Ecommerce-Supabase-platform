@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runQuery, runGet } from '@/lib/db'
 
 export async function GET() {
   try {
-    const db = getDb()
-
     // Get total revenue (all time)
-    const totalRevenue = db
-      .prepare(
-        `
+    const totalRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total,
           COALESCE(SUM(subtotal), 0) as subtotal,
@@ -17,13 +14,11 @@ export async function GET() {
           COUNT(*) as transaction_count
         FROM revenue_transactions
       `
-      )
-      .get() as any
+    ) as any || { total: 0, subtotal: 0, tax: 0, discount: 0, transaction_count: 0 }
 
     // Get revenue by source
-    const revenueBySource = db
-      .prepare(
-        `
+    const revenueBySource = await runQuery<any>(
+      `
         SELECT
           transaction_type,
           COALESCE(SUM(total), 0) as total,
@@ -31,90 +26,78 @@ export async function GET() {
         FROM revenue_transactions
         GROUP BY transaction_type
       `
-      )
-      .all() as any[]
+    )
 
     // Get today's revenue
-    const todayRevenue = db
-      .prepare(
-        `
+    const todayRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total,
           COUNT(*) as transaction_count
         FROM revenue_transactions
-        WHERE DATE(transaction_date) = DATE('now')
+        WHERE transaction_date::date = CURRENT_DATE
       `
-      )
-      .get() as any
+    ) as any || { total: 0, transaction_count: 0 }
 
-    // Get this month's revenue
-    const monthRevenue = db
-      .prepare(
-        `
+    // Get month's revenue
+    const monthRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total,
           COUNT(*) as transaction_count
         FROM revenue_transactions
-        WHERE strftime('%Y-%m', transaction_date) = strftime('%Y-%m', 'now')
+        WHERE to_char(transaction_date, 'YYYY-MM') = to_char(CURRENT_DATE, 'YYYY-MM')
       `
-      )
-      .get() as any
+    ) as any || { total: 0, transaction_count: 0 }
 
     // Get this year's revenue
-    const yearRevenue = db
-      .prepare(
-        `
+    const yearRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total,
           COUNT(*) as transaction_count
         FROM revenue_transactions
-        WHERE strftime('%Y', transaction_date) = strftime('%Y', 'now')
+        WHERE to_char(transaction_date, 'YYYY') = to_char(CURRENT_DATE, 'YYYY')
       `
-      )
-      .get() as any
+    ) as any || { total: 0, transaction_count: 0 }
 
     // Get yesterday's revenue for comparison
-    const yesterdayRevenue = db
-      .prepare(
-        `
+    const yesterdayRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total
         FROM revenue_transactions
-        WHERE DATE(transaction_date) = DATE('now', '-1 day')
+        WHERE transaction_date::date = CURRENT_DATE - INTERVAL '1 day'
       `
-      )
-      .get() as any
+    ) as any || { total: 0 }
 
     // Get last month's revenue for comparison
-    const lastMonthRevenue = db
-      .prepare(
-        `
+    const lastMonthRevenue = await runGet(
+      `
         SELECT
           COALESCE(SUM(total), 0) as total
         FROM revenue_transactions
-        WHERE strftime('%Y-%m', transaction_date) = strftime('%Y-%m', 'now', '-1 month')
+        WHERE to_char(transaction_date, 'YYYY-MM') = to_char(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM')
       `
-      )
-      .get() as any
+    ) as any || { total: 0 }
 
     // Calculate growth percentages
-    const todayGrowth = yesterdayRevenue.total > 0
-      ? ((todayRevenue.total - yesterdayRevenue.total) / yesterdayRevenue.total) * 100
+    const todayGrowth = Number(yesterdayRevenue.total) > 0
+      ? ((Number(todayRevenue.total) - Number(yesterdayRevenue.total)) / Number(yesterdayRevenue.total)) * 100
       : 0
 
-    const monthGrowth = lastMonthRevenue.total > 0
-      ? ((monthRevenue.total - lastMonthRevenue.total) / lastMonthRevenue.total) * 100
+    const monthGrowth = Number(lastMonthRevenue.total) > 0
+      ? ((Number(monthRevenue.total) - Number(lastMonthRevenue.total)) / Number(lastMonthRevenue.total)) * 100
       : 0
 
     // Get average transaction value
-    const avgTransactionValue = totalRevenue.transaction_count > 0
-      ? totalRevenue.total / totalRevenue.transaction_count
+    const avgTransactionValue = Number(totalRevenue.transaction_count) > 0
+      ? Number(totalRevenue.total) / Number(totalRevenue.transaction_count)
       : 0
 
     // Get payment method breakdown
-    const paymentMethods = db
-      .prepare(
-        `
+    const paymentMethods = await runQuery<any>(
+      `
         SELECT
           payment_method,
           COALESCE(SUM(total), 0) as total,
@@ -123,13 +106,11 @@ export async function GET() {
         GROUP BY payment_method
         ORDER BY total DESC
       `
-      )
-      .all() as any[]
+    )
 
     // Get recent transactions (last 10)
-    const recentTransactions = db
-      .prepare(
-        `
+    const recentTransactions = await runQuery<any>(
+      `
         SELECT
           id,
           transaction_type,
@@ -142,8 +123,7 @@ export async function GET() {
         ORDER BY transaction_date DESC
         LIMIT 10
       `
-      )
-      .all() as any[]
+    )
 
     return NextResponse.json({
       success: true,

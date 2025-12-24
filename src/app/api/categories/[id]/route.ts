@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { runGet, runUpdate, runDelete } from '@/lib/db'
 import { apiResponse, apiError, slugify } from '@/lib/utils'
 
 // GET /api/categories/[id] - Get single category
@@ -8,17 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
     const identifier = id
     const isNumeric = /^\d+$/.test(identifier)
 
-    const category = db.prepare(`
+    const category = await runGet(`
       SELECT c.*, p.name as parent_name
       FROM categories c
       LEFT JOIN categories p ON c.parent_id = p.id
       WHERE ${isNumeric ? 'c.id' : 'c.slug'} = ?
-    `).get(isNumeric ? parseInt(identifier) : identifier) as any
+    `, [isNumeric ? parseInt(identifier) : identifier]) as any
 
     if (!category) {
       return NextResponse.json(
@@ -44,11 +43,10 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const db = getDb()
     const { id } = await params
     const categoryId = parseInt(id)
 
-    const existing = db.prepare('SELECT id FROM categories WHERE id = ?').get(categoryId)
+    const existing = await runGet('SELECT id FROM categories WHERE id = ?', [categoryId])
     if (!existing) {
       return NextResponse.json(
         apiError('Category not found'),
@@ -101,15 +99,15 @@ export async function PUT(
     if (updates.length > 0) {
       const sql = `UPDATE categories SET ${updates.join(', ')} WHERE id = ?`
       values.push(categoryId)
-      db.prepare(sql).run(values)
+      await runUpdate(sql, values)
     }
 
-    const category = db.prepare(`
+    const category = await runGet(`
       SELECT c.*, p.name as parent_name
       FROM categories c
       LEFT JOIN categories p ON c.parent_id = p.id
       WHERE c.id = ?
-    `).get(categoryId)
+    `, [categoryId])
 
     return NextResponse.json(apiResponse(category))
   } catch (error) {
@@ -127,11 +125,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDb()
     const { id } = await params
     const categoryId = parseInt(id)
 
-    const existing = db.prepare('SELECT id FROM categories WHERE id = ?').get(categoryId)
+    const existing = await runGet('SELECT id FROM categories WHERE id = ?', [categoryId])
     if (!existing) {
       return NextResponse.json(
         apiError('Category not found'),
@@ -140,13 +137,13 @@ export async function DELETE(
     }
 
     // Update products to remove category
-    db.prepare('UPDATE products SET category_id = NULL WHERE category_id = ?').run(categoryId)
+    await runUpdate('UPDATE products SET category_id = NULL WHERE category_id = ?', [categoryId])
 
     // Update child categories to remove parent
-    db.prepare('UPDATE categories SET parent_id = NULL WHERE parent_id = ?').run(categoryId)
+    await runUpdate('UPDATE categories SET parent_id = NULL WHERE parent_id = ?', [categoryId])
 
     // Delete category
-    db.prepare('DELETE FROM categories WHERE id = ?').run(categoryId)
+    await runDelete('DELETE FROM categories WHERE id = ?', [categoryId])
 
     return NextResponse.json(apiResponse({ message: 'Category deleted successfully' }))
   } catch (error) {
